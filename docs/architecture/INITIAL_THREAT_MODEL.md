@@ -17,6 +17,10 @@
 
 
 
+[Publication redaction: private workstation observation/configuration omitted.]
+
+
+
 ## Доверительные границы
 
 1. Internet/package registry/extension marketplace → код в пользовательской сессии.
@@ -89,9 +93,9 @@ extensions — доступ в пределах предоставленных b
 
 ### Exposed development server
 
-Сейчас наблюдавшиеся TCP sockets loopback; будущие Docker publications 3000/8000/5432
-заданы без bind. Ошибочный запуск или изменение bind может открыть dev API/database
-соседям. WAN reachability неизвестна и требует router/external evidence.
+[Publication redaction: private workstation observation/configuration omitted.]
+
+
 
 Следующий контроль: явная политика localhost/нужный LAN interface, authentication
 для требуемого LAN сервиса, проверка IPv4/IPv6 и Docker forwarding. Не запрещать

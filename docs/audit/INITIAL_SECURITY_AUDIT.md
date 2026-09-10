@@ -52,6 +52,10 @@ Historical workstation audit. Observation values and actionable private findings
   без cookies/history/session storage. `flatpak list --app`.
 - E09: whitelist полей Pop updater config, даты и package operations из
   APT history; только признаки conventional backup locations, без backup contents.
+- E10: переданное владельцем подтверждённое summary ручных privileged reads:
+  UFW status, IPv4/IPv6 iptables-nft policies и Docker chains, aa-status,
+  socket ownership, visudo syntax check и sudo permissions for the private local account.
+  Полные rulesets, legacy results и полный process/profile mapping не предоставлены.
 
 [Publication redaction: private workstation observation/configuration omitted.]
 
@@ -59,7 +63,8 @@ Historical workstation audit. Observation values and actionable private findings
 
 Пользователь отдельно разрешил восемь sudo diagnostics: UFW status,
 iptables/ip6tables saves для nft/legacy, aa-status, ss с владельцами, visudo check.
-**Все восемь не выполнились:** `sudo -n: a password is required`.
+**При первоначальном запуске Codex все восемь не выполнились:**
+`sudo -n: a password is required`. Позднее владелец предоставил E10 вручную.
 Не использовались интерактивный пароль, `sudo -v` или обход через Docker.
 
 Не выполнялись обновления APT indices/packages, установки, vulnerability/secret scans,
