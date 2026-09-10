@@ -4,7 +4,7 @@
 
 Historical workstation audit. Observation values and actionable private findings are withheld; the original is retained privately. This public form is not a current host assessment.
 
-## 1. Executive summary
+## 1. Исторический executive summary — исходный inventory до E15
 [Publication redaction: private workstation observation/configuration omitted.]
 
 ## 2. Что и как проверено
@@ -71,31 +71,31 @@ iptables/ip6tables saves для nft/legacy, aa-status, ss с владельца�
 сетевые probes, изменение services/firewall/Docker, browser/router login.
 Сырые логи, environment dumps, private SSH keys и backup contents не сохранялись.
 Внешняя документация проверена отдельно без телеметрии хоста.
-## 3. Current attack surface и платформа
+## 3. Current attack surface и платформа — исторический inventory E01–E10
 [Publication redaction: private workstation observation/configuration omitted.]
 
-## 4. Network exposure
+## 4. Network exposure — исторический inventory E01–E10
 [Publication redaction: private workstation observation/configuration omitted.]
 
-## 5. Accounts / privileges
+## 5. Accounts / privileges — исторический inventory E01–E10
 [Publication redaction: private workstation observation/configuration omitted.]
 
-## 6. Persistence
+## 6. Persistence — исторический inventory E01–E10
 [Publication redaction: private workstation observation/configuration omitted.]
 
-## 7. Packages / updates
+## 7. Packages / updates — исторический inventory E01–E10
 [Publication redaction: private workstation observation/configuration omitted.]
 
-## 8. AppArmor / boot / disk / kernel
+## 8. AppArmor / boot / disk / kernel — исторический inventory E01–E10
 [Publication redaction: private workstation observation/configuration omitted.]
 
-## 9. Docker
+## 9. Docker — исторический inventory E01–E10
 [Publication redaction: private workstation observation/configuration omitted.]
 
-## 10. Developer attack surface
+## 10. Developer attack surface — исторический inventory E01–E10
 [Publication redaction: private workstation observation/configuration omitted.]
 
-## 11. Backup / recovery observations
+## 11. Backup / recovery observations — исторический inventory E01–E10
 [Publication redaction: private workstation observation/configuration omitted.]
 
 ## 12. Findings, по severity

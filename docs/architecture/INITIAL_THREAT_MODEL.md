@@ -9,6 +9,12 @@
 
 
 
+## Статус исходных наблюдений
+
+[Publication redaction: private workstation observation/configuration omitted.]
+
+
+
 ## Что защищаем
 
 - Исходники, Git identity, API/SSH credentials и developer configuration.
@@ -144,7 +150,9 @@ Root attacker может подделать локальную telemetry; обе
 
 Архитектурное решение: deterministic detection независимо от LLM; trusted schema
 отдельно от untrusted evidence; компактный redacted evidence pack, validated output,
-никаких shell/system tools у analyst. Только краткое проверяемое объяснение.
+никаких произвольных shell/system tools у analyst. В M2b разрешён ограниченный
+набор типизированных запросов к evidence и уже разрешённым коллекторам через policy
+layer; модель не создаёт команды и не меняет защиту. Контракт — [LLM security](llm-security.md).
 Cloud analysis изначально выключен и возможен по явному запросу после privacy review.
 Tests позже должны проверять injection strings и отсутствие side effects.
 Это будущие требования, **сейчас LLM module не реализован**.

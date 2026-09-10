@@ -4,7 +4,7 @@
 
 Historical firewall change plan: review → backup → approval → apply → verification → rollback. Exact target policy and native output are withheld.
 
-## CURRENT STATE
+## CURRENT STATE — историческое состояние до E15
 [Publication redaction: private workstation observation/configuration omitted.]
 
 ## THREAT MODEL RELEVANCE
@@ -124,7 +124,7 @@ WAN/router verification — отдельная работа, не вывод и�
 Этот документ разрешает **только review**, не выполнение. В будущих отдельных approval
 должны быть явно указаны exact commands, эффект, риск, verification и rollback:
 
-1. **Текущий запрос на approval:** только ручной read-only batch ниже. Он не
+1. **Исторический запрос на approval:** только ручной read-only batch ниже. Он не
    содержит restore --test, backup writes или ufw mutations. Дополнительные reads
    custom hook snippets требуют отдельного review с удалением чувствительных literals.
    Будущий restore `--test` согласуется отдельно.
@@ -157,4 +157,7 @@ effects требуют нового конкретного плана. Нет р
 - [Docker firewall interaction](https://docs.docker.com/engine/network/packet-filtering-firewalls/).
 - [Docker port publishing](https://docs.docker.com/engine/network/port-publishing/).
 
-**NO SYSTEM CHANGES WERE MADE.** Изменён только этот документ, commit не выполнялся.
+**Историческая запись подготовки:** «NO SYSTEM CHANGES WERE MADE» относилась
+только к созданию плана. Позднее firewall применён и проверен в E15; M1 закрыт в E16.
+При подготовке перед M2 этот документ только уточнён; новых host changes нет.
+Актуальные решения: [NEXT_STEPS](NEXT_STEPS.md); развитие: [ROADMAP](../ROADMAP.md).

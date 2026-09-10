@@ -1,111 +1,128 @@
-"""Read-only repository safety gate for the M0 foundation."""
+"""Read-only repository hygiene; run Ruff separately for Python analysis.
+
+This development check is not a sandbox, secret scanner, or host audit.
+Only known project configuration files are read. Git supplies path metadata.
+"""
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
+import re
+import shutil
+import subprocess
+import tomllib
 
 
 ROOT = Path(__file__).resolve().parents[1]
-IGNORED_DIRECTORIES = {
-    ".git",
-    ".venv",
-    "venv",
-    "__pycache__",
-    ".pytest_cache",
-    ".mypy_cache",
-    ".ruff_cache",
-    "runtime",
-    "state",
-    ".cache",
-    "tmp",
-    "logs",
-}
-REQUIRED_FILES = (
-    "AGENTS.md",
-    ".gitignore",
-    ".python-version",
-    "README.md",
-    "pyproject.toml",
-    "docs/audit/INITIAL_SECURITY_AUDIT.md",
-    "docs/operations/HOST_FIREWALL_HARDENING_PLAN.md",
-    "docs/operations/NEXT_STEPS.md",
-    "tests/test_m0_safety.py",
+REQUIRED_FILES = ("AGENTS.md", ".gitignore", ".python-version", "README.md", "pyproject.toml", "uv.lock")
+LOCAL_DIRECTORIES = {"runtime", "state", ".cache", "tmp", "logs", "secrets", ".ssh", ".venv", "venv"}
+IGNORE_PROBES = (
+    ".venv/probe", ".env", ".env.local", "nested/.env", "secrets/probe", ".ssh/probe",
+    "runtime/probe", "state/probe", "logs/probe", "tmp/probe", ".cache/probe",
+    "events.db", "events.db-wal", "events.sqlite", "events.sqlite-shm",
+    "events.sqlite3", "events.sqlite3-journal", "probe.log", "probe.log.1",
 )
-UNSAFE_SOURCE_PATTERNS = {
-    "shell" + "=True": "shell string execution is not allowed in project subprocesses",
-    "os." + "system(": "os.system is not allowed in project subprocesses",
-    "ev" + "al(": "eval is not allowed in project code",
-    "ex" + "ec(": "exec is not allowed in project code",
-}
-
-
-def _project_files() -> list[Path]:
-    files: list[Path] = []
-    for path in ROOT.rglob("*"):
-        if not path.is_file():
-            continue
-        if any(part in IGNORED_DIRECTORIES for part in path.relative_to(ROOT).parts):
-            continue
-        files.append(path)
-    return files
 
 
 def _forbidden_local_file(path: Path) -> bool:
-    name = path.name
+    """Classify names without reading potentially sensitive contents."""
+    name = path.name.lower()
     if name == ".env" or (name.startswith(".env.") and name != ".env.example"):
         return True
-    return path.suffix.lower() in {".db", ".sqlite", ".sqlite3"}
+    return bool(re.search(r"\.(?:db|sqlite|sqlite3)(?:-.*)?$|\.log(?:\..*)?$", name))
 
 
-def collect_violations() -> list[str]:
-    violations: list[str] = []
-    files = _project_files()
-    file_set = {path.relative_to(ROOT).as_posix() for path in files}
+def _forbidden_repository_path(path: Path) -> bool:
+    return _forbidden_local_file(path) or bool(set(path.parts) & LOCAL_DIRECTORIES)
 
-    for required in REQUIRED_FILES:
-        if required not in file_set:
-            violations.append(f"missing required M0 file: {required}")
 
-    gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
-    for entry in (".venv/", ".env", "!.env.example", "*.sqlite3"):
-        if entry not in gitignore:
-            violations.append(f".gitignore is missing safety entry: {entry}")
+def _git(root: Path, args: tuple[str, ...], data: bytes | None = None) -> tuple[int, bytes]:
+    git = shutil.which("git")
+    if git is None:
+        raise RuntimeError("Git is required for repository hygiene checks")
+    # Fixed read-only Git subcommands; no telemetry or shell command strings.
+    result = subprocess.run(  # noqa: S603
+        [git, "-C", str(root), *args], input=data, stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL, timeout=10, check=False,
+    )
+    return result.returncode, result.stdout
 
-    pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    for entry in (
-        'requires-python = ">=3.10"',
-        "dependencies = []",
-        "[dependency-groups]",
-        '"ruff",',
-        "package = false",
+
+def _table(value: object) -> dict:
+    return value if isinstance(value, dict) else {}
+
+
+def _configuration_violations(root: Path) -> list[str]:
+    try:
+        config = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+        pin = (root / ".python-version").read_text(encoding="utf-8").strip()
+    except (OSError, UnicodeError, tomllib.TOMLDecodeError):
+        return ["cannot read valid Python project configuration (contents omitted)"]
+    violations = []
+    if not re.fullmatch(r"3\.\d+", pin):
+        return [".python-version must contain a Python 3 major.minor pin"]
+    if _table(config.get("project")).get("requires-python") != f">={pin}":
+        violations.append("requires-python must match the .python-version minimum")
+    ruff = _table(_table(config.get("tool")).get("ruff"))
+    if ruff.get("target-version") != "py" + pin.replace(".", ""):
+        violations.append("Ruff target-version must match .python-version")
+    selected = _table(ruff.get("lint")).get("select", [])
+    if not isinstance(selected, list) or not all(item in selected for item in ("S", "TID251")):
+        violations.append("Ruff must enable security and banned-API checks")
+    dev = _table(config.get("dependency-groups")).get("dev", [])
+    if not isinstance(dev, list) or not any(
+        isinstance(item, str) and re.match(r"ruff(?:$|[<>=!~\[])", item) for item in dev
     ):
-        if entry not in pyproject:
-            violations.append(f"pyproject.toml is missing M0 metadata: {entry}")
+        violations.append("declare Ruff in the dev dependency group")
+    # Runtime dependencies and packaging may evolve with the application.
+    return violations
 
-    python_version = (ROOT / ".python-version").read_text(encoding="utf-8").strip()
-    if python_version != "3.10":
-        violations.append(f".python-version must pin the workstation baseline 3.10, got {python_version!r}")
 
-    for path in files:
-        relative = path.relative_to(ROOT)
-        if _forbidden_local_file(path):
-            violations.append(f"sensitive runtime file is present in project tree: {relative}")
-        if path.suffix in {".py", ".sh"}:
-            text = path.read_text(encoding="utf-8", errors="replace")
-            for pattern, explanation in UNSAFE_SOURCE_PATTERNS.items():
-                if pattern in text:
-                    violations.append(f"{relative}: {explanation}")
-
+def collect_violations(root: Path = ROOT) -> list[str]:
+    violations = []
+    for name in REQUIRED_FILES:
+        path = root / name
+        if path.is_symlink() or not path.is_file():
+            violations.append(f"missing regular project file: {name}")
+    if violations:
+        return violations
+    violations.extend(_configuration_violations(root))
+    try:
+        # .gitignore cannot protect an existing index entry: include tracked ignored files.
+        rc, output = _git(root, ("ls-files", "--cached", "--others", "--exclude-standard", "-z"))
+        if rc != 0:
+            return violations + ["Git file inventory failed (details omitted)"]
+        for item in output.split(b"\0"):
+            if item:
+                relative = Path(os.fsdecode(item))
+                if _forbidden_repository_path(relative):
+                    violations.append(f"local data is tracked or not ignored: {str(relative)!r}")
+        probes = (*IGNORE_PROBES, ".env.example")
+        rc, output = _git(
+            root, ("check-ignore", "--no-index", "--stdin", "-z"),
+            b"\0".join(p.encode() for p in probes) + b"\0",
+        )
+        if rc not in (0, 1):
+            return violations + ["Git ignore check failed (details omitted)"]
+        ignored = set(output.split(b"\0"))
+        for probe in IGNORE_PROBES:
+            if probe.encode() not in ignored:
+                violations.append(f"Git ignore protection missing for: {probe}")
+        if b".env.example" in ignored:
+            violations.append(".env.example must remain available for a sanitized example")
+    except (OSError, subprocess.TimeoutExpired, RuntimeError):
+        violations.append("Git hygiene check unavailable or timed out (details omitted)")
     return violations
 
 
 def main() -> int:
     violations = collect_violations()
+    for violation in violations:
+        print(f"FAIL: {violation}")
     if violations:
-        for violation in violations:
-            print(f"FAIL: {violation}")
         return 1
-    print("M0_SAFETY_CHECK_OK")
+    print("M0_SAFETY_CHECK_OK (repository hygiene only; run Ruff and tests separately)")
     return 0
 
 

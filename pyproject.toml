@@ -3,7 +3,7 @@ name = "security-orchestrator"
 version = "0.1.0"
 description = "Security-first foundation for a personal Linux workstation watchdog."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.13"
 dependencies = []
 
 [dependency-groups]
@@ -17,9 +17,17 @@ dev = [
 package = false
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py313"
 line-length = 100
 extend-exclude = ["docs"]
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F", "B", "S"]
+select = ["E4", "E7", "E9", "F", "B", "S", "TID251"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"builtins.eval".msg = "Do not execute dynamically generated Python."
+"builtins.exec".msg = "Do not execute dynamically generated Python."
+"os.system".msg = "Use reviewed fixed argv with shell=False and a timeout."
+"os.popen".msg = "Use reviewed fixed argv with shell=False and a timeout."
+"subprocess.getoutput".msg = "Shell command strings are prohibited."
+"subprocess.getstatusoutput".msg = "Shell command strings are prohibited."

@@ -2,67 +2,58 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
-Практический security-проект для личной Pop!_OS workstation. Приоритеты:
-**безопасность → надёжность → понятность → простота → автоматизация**.
+Личный Linux security monitor: замечать важные изменения, понимать доказательства
+и учиться безопасности на реальных событиях. **Безопасность → надёжность → понятность
+→ простота → автоматизация → функции.**
 
 ## Состояние на 2026-09-10
 
-**M0 и M1 завершены в согласованном scope. M2 ждёт подтверждения владельца.**
-Выполнен host security audit, применён и проверен UFW для IPv4/IPv6; необходимые
-exceptions и Docker rules сохранены, CUPS/DNS/HTTPS checks успешны.
+**M0/M1 завершены в согласованном scope. Подготовка перед M2 реализована:** Python
+согласован на 3.13, исправлен safety gate, добавлены поведенческие тесты и CI workflow,
+архитектура и порядок этапов пересмотрены. Работающего `sec`, collectors, monitoring
+service и LLM integration пока нет. Следующий отдельный increment — M2a.
+
+- [Roadmap: M2a watchdog → M2b AI → M2c надёжность/UI → M3 Docker](docs/ROADMAP.md).
+- [Архитектура, ежедневный цикл и данные](docs/architecture/overview.md).
+- [AI-расследователь и замена моделей](docs/architecture/llm-security.md).
+- [Разработка, проверки и границы CI](docs/operations/development.md).
+- [Правила безопасности](docs/operations/safety-rules.md).
+
+## Последнее подтверждённое состояние машины
+
+Источник — аудит **E15/E16 от 2026-09-10**, не новый live scan. UFW применён и
+проверен для IPv4/IPv6; согласованные exceptions и Docker rules сохранены,
+CUPS/DNS/HTTPS checks прошли в указанном scope.
 
 [Publication redaction: private workstation observation/configuration omitted.]
 
 
 
-- [Первоначальный аудит: факты, риски, ограничения](docs/audit/INITIAL_SECURITY_AUDIT.md)
-- [Начальная модель угроз](docs/architecture/INITIAL_THREAT_MODEL.md)
-- [Следующие действия и ручная проверка](docs/operations/NEXT_STEPS.md)
-- [Выполненный firewall plan и аварийный rollback](docs/operations/HOST_FIREWALL_HARDENING_PLAN.md)
+- [Решения и оставшиеся ограничения M1](docs/operations/NEXT_STEPS.md).
+- [История аудита E01–E16](docs/audit/INITIAL_SECURITY_AUDIT.md).
+- [Модель угроз](docs/architecture/INITIAL_THREAT_MODEL.md).
+- [Архив выполненной firewall-процедуры](docs/operations/HOST_FIREWALL_HARDENING_PLAN.md).
 
-Работающего `sec`, collectors, monitoring daemon и LLM integration пока нет.
-Это документация существующей машины, а не сертификат её безопасности.
+## Локальные проверки
 
-## Безопасная разработка — M0
-
-M0 завершён по подтверждению владельца; без regression к нему не возвращаться.
-Применяются глобальный `/workspace/agent-policy/AGENTS.md` и проектный `AGENTS.md`.
-Codex работает без root, с ограниченной сетью и sandbox. Проверка инструментом
-не заменяет согласие владельца на system-changing operations.
-
-В начале существенной сессии проверяются инструкции, Git status и policy diff.
-Repository имеет Git history; результаты первоначального аудита об отсутствии
-Git являются историческими. Данные из sandbox не всегда описывают host namespace.
-
-Стратегия при появлении кода: `uv` управляет project `.venv`, dependency groups
-и `uv.lock`; system/user Python не изменяется. Версия development interpreter
-закреплена в `.python-version`, environment metadata и lint policy — в
-`pyproject.toml`; runtime dependencies пока пусты. `uv.lock` должен создаваться
-и обновляться только самим `uv`, а затем храниться в Git.
-Repository-level safety gate находится в `scripts/check_m0.py`, его regression
-tests — в `tests/test_m0_safety.py` и используют только standard library:
+Для уже установленной project `.venv` с Python 3.13 и Ruff:
 
 ```bash
-uv sync
-uv run python scripts/check_m0.py
-uv run python -m unittest discover -s tests -v
-uv run ruff check .
+uv run --no-sync python scripts/check_m0.py
+uv run --no-sync python -m unittest discover -s tests -v
+uv run --no-sync ruff check --no-cache .
+git diff --check
 ```
 
-Tests используют синтетические данные; subprocess — фиксированные argv,
-validation, timeout и bounds, без исполнения текста telemetry. Runtime tests
-приложения отсутствуют, поскольку приложения ещё нет. Не использовать `pip`
-для ad-hoc изменений окружения; зависимости объявляются в `pyproject.toml`, а
-точные версии разрешаются в `uv.lock`. В Git не включаются реальные `.env`,
-credentials, raw telemetry и runtime databases.
+Подготовка среды и обновление lockfile описаны в [development](docs/operations/development.md).
+System/user Python не изменяется. `uv.lock` редактирует только uv. Gate проверяет
+repository hygiene, Ruff — Python constructs; они не заменяют sandbox, secret
+scanning или host audit. Тесты работают с disposable repositories и synthetic data.
+CI настроен на GitHub-hosted runner; локальные тесты не подтверждают удалённый CI run.
 
-## Граница будущей автоматизации
+## Ближайшая польза
 
-Сначала механизмы ОС и нормализованные события, затем deterministic detection.
-LLM сможет объяснять компактные evidence packs, но не выполнять действия.
-`LLM_ENABLED=false` должен сохранять работоспособность будущего продукта;
-cloud escalation и автоматическое изменение host state изначально отключены.
-Сейчас эти параметры описывают проектное решение, а не установленную защиту.
-
-История разрешённого firewall change и решения владельца записаны в E15/E16 аудита.
-При закрытии M1 изменена только существующая документация; новых system changes нет.
+M2a даст baseline/diff, историю и объяснимые предупреждения без обязательного AI.
+M2b добавит ручное расследование с LLM/SLM и ограниченными проверками. Облако
+выключено по умолчанию, host remediation отсутствует. Эти возможности сейчас
+описаны в плане и ещё не предоставляются приложением.
