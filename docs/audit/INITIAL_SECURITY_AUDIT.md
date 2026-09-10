@@ -120,7 +120,13 @@ iptables/ip6tables saves для nft/legacy, aa-status, ss с владельца�
 ### F09 — private finding details withheld
 
 ## 13. Unknowns / ограничения
+
+
+Ниже — ограничения первоначального inventory; уточнения E11–E16 имеют приоритет.
+
 [Publication redaction: private workstation observation/configuration omitted.]
+
+
 
 ## 14. Приоритетные следующие действия
 [Publication redaction: private workstation observation/configuration omitted.]

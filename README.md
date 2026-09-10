@@ -7,41 +7,39 @@
 
 ## Состояние на 2026-09-10
 
-Создана документальная основа M0 и выполнен первоначальный read-only inventory M1.
-Полный M1 **не закрыт**: привилегированные проверки не выполнились без пароля sudo;
-доступность из LAN/WAN и восстановление backup не проверялись.
+**M0 и M1 завершены в согласованном scope. M2 ждёт подтверждения владельца.**
+Выполнен host security audit, применён и проверен UFW для IPv4/IPv6; необходимые
+exceptions и Docker rules сохранены, CUPS/DNS/HTTPS checks успешны.
+
+[Publication redaction: private workstation observation/configuration omitted.]
+
+
 
 - [Первоначальный аудит: факты, риски, ограничения](docs/audit/INITIAL_SECURITY_AUDIT.md)
 - [Начальная модель угроз](docs/architecture/INITIAL_THREAT_MODEL.md)
 - [Следующие действия и ручная проверка](docs/operations/NEXT_STEPS.md)
+- [Выполненный firewall plan и аварийный rollback](docs/operations/HOST_FIREWALL_HARDENING_PLAN.md)
 
 Работающего `sec`, collectors, monitoring daemon и LLM integration пока нет.
 Это документация существующей машины, а не сертификат её безопасности.
 
 ## Безопасная разработка — M0
 
-[Publication redaction: private workstation observation/configuration omitted.]
+M0 завершён по подтверждению владельца; без regression к нему не возвращаться.
+Применяются глобальный `/workspace/agent-policy/AGENTS.md` и проектный `AGENTS.md`.
+Codex работает без root, с ограниченной сетью и sandbox. Проверка инструментом
+не заменяет согласие владельца на system-changing operations.
 
+В начале существенной сессии проверяются инструкции, Git status и policy diff.
+Repository имеет Git history; результаты первоначального аудита об отсутствии
+Git являются историческими. Данные из sandbox не всегда описывают host namespace.
 
-
-В начале существенной сессии: проверить UID, прочитать применимые инструкции,
-проверить Git status и diff policy-файлов. Не считать результат из sandbox полным
-представлением процессов, групп и сети хоста. Для этой итерации запись разрешена
-только внутри проекта. Диагностика системы — read-only, без исправлений.
-
-**Git пока не инициализирован:** проверка на хосте не нашла `.git`, `git status`
-вернул `not a git repository`. Поэтому историческая целостность инструкций не
-подтверждена. В sandbox виден синтетический пустой `.git`; он не означает наличие
-истории. Git init/commit в этой итерации не выполнялись.
-
-Стратегия окружения для следующего небольшого шага M0:
-
-[Publication redaction: private workstation observation/configuration omitted.]
-
-
-
-M0 остаётся частично выполненным: Git, исполняемое окружение, lock и тесты кода
-ещё не созданы. Так сохраняется согласованный минимальный объём этой итерации.
+Стратегия при появлении кода: отдельный project `.venv`, минимум dependencies
+с точными версиями/lock, без изменения system/user Python. Tests используют
+синтетические данные; subprocess — фиксированные argv, validation и bounds,
+без исполнения текста telemetry. Сейчас проверяются Markdown links и diff;
+runtime tests приложения отсутствуют, поскольку приложения ещё нет.
+В Git не включаются реальные `.env`, credentials, raw telemetry и runtime databases.
 
 ## Граница будущей автоматизации
 
@@ -51,4 +49,5 @@ LLM сможет объяснять компактные evidence packs, но н
 cloud escalation и автоматическое изменение host state изначально отключены.
 Сейчас эти параметры описывают проектное решение, а не установленную защиту.
 
-**NO SYSTEM CHANGES WERE MADE.** Созданы только четыре документа проекта.
+История разрешённого firewall change и решения владельца записаны в E15/E16 аудита.
+При закрытии M1 изменена только существующая документация; новых system changes нет.

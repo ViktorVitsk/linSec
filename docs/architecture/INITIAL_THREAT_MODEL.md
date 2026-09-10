@@ -5,6 +5,10 @@
 Дата: 2026-09-10. Основание: [фактический аудит](../audit/INITIAL_SECURITY_AUDIT.md).
 Это модель рисков, не список обнаруженных атак. Область — одна developer workstation и её связь с LAN; IoT, pentest lab и multi-host не реализуются.
 
+[Publication redaction: private workstation observation/configuration omitted.]
+
+
+
 ## Что защищаем
 
 - Исходники, Git identity, API/SSH credentials и developer configuration.

@@ -1,4 +1,4 @@
-# Следующие действия — завершение M1
+# Следующие действия после M1
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
@@ -10,13 +10,13 @@ Historical M1 record: the scoped assessment/change stage was recorded complete; 
 
 
 
-## 2. Следующий обязательный шаг — backup / recovery
+## 2. Backup / recovery — assessment завершён, ограничения сохранены
 
 [Publication redaction: private workstation observation/configuration omitted.]
 
 
 
-## 3. Docker — обязательные решения P1
+## 3. Docker — принятое решение и условие перед запуском
 
 [Publication redaction: private workstation observation/configuration omitted.]
 
@@ -34,7 +34,7 @@ Historical M1 record: the scoped assessment/change stage was recorded complete; 
 
 
 
-## Условие завершения M1
+## Итог M1 и следующий этап
 
 [Publication redaction: private workstation observation/configuration omitted.]
 
