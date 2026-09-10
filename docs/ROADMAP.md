@@ -15,9 +15,16 @@ multi-tenant и SaaS сейчас не посвящаем отдельную а�
 - Подготовка перед M2: реализованы Python 3.13, поведенческие проверки repository
   hygiene и Ruff, locked CI workflow, короткие инструкции и отдельная архитектура.
   Локально проходят 17 тестов, hygiene, Ruff и lock check; удалённый CI ещё не запускался.
-- M2a/M2b/M2c/M3: **ещё не реализованы**. Нет `sec`, monitoring daemon и AI integration.
+- M2a: **реализован foreground runtime, эксплуатационная приёмка открыта**.
+  Есть `sec`, collectors, SQLite migrations, baseline/diff, alerts/explain, исключения,
+  retention, doctor и kill switch. Synthetic replay проходит; один foreground scan
+  в sandbox показал unavailable сеть и partial systemd. Это не проверка полного
+  покрытия workstation. User service не установлен, семидневный trial не выполнен.
+- M2b/M2c/M3: **ещё не реализованы**. AI integration и локальной UI нет.
 
-Текущая поставка заканчивается подготовкой. M2a — следующий отдельный increment.
+Текущая поставка — код M2a и синтетическая демонстрация. Ближайший шаг: проверить
+host coverage в обычном пользовательском окружении, просмотреть baseline и провести
+семь дней эксплуатации. [Процедура и ограничения](operations/M2A-WATCHDOG.md).
 Системные операции не разрешаются автоматически принятием roadmap.
 
 ## M2a — Первый ежедневный watchdog

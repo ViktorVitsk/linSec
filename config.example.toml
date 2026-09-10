@@ -1,0 +1,8 @@
+schema_version = 1
+interval_seconds = 300
+stale_seconds = 900
+storage_mib = 512
+notifications = false
+llm_enabled = false
+persistence = ["crontab", "rc_local", "ld_preload", "profile", "bashrc"]
+privileged_groups = ["root", "sudo", "admin", "wheel", "docker", "lxd", "disk", "shadow", "libvirt", "adm", "systemd-journal"]

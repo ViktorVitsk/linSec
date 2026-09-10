@@ -5,7 +5,7 @@
 - Build a useful personal Linux security monitor that teaches through real evidence.
 - SECURITY > RELIABILITY > UNDERSTANDABILITY > SIMPLICITY > AUTOMATION > FEATURES.
 - Follow the accepted [roadmap](docs/ROADMAP.md); finish one useful increment at a time.
-- M0/M1 are closed in their agreed scope. Preparation precedes M2a; runtime is not built yet.
+- M0/M1 are closed in their agreed scope. M2a foreground runtime exists; host validation and the seven-day trial remain open.
 - Linux first; keep the core portable. No Windows sensors, SaaS, SIEM or distributed stack now.
 
 ## Safety boundaries — always apply

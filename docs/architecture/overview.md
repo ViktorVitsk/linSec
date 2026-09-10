@@ -20,8 +20,9 @@
 ## Компоненты и зависимости
 
 Один Python-пакет, обычная project `.venv` под uv, SQLite, CLI и небольшой monitor.
-Пока приложение не создано, `package = false` остаётся корректным временным состоянием.
-При M2a перейти к устанавливаемому пакету с `src` layout и entry point `sec`.
+M2a реализован в `src/security_orchestrator` с entry point `sec`, стандартной
+библиотекой Python и встроенным в uv build backend. Детали первого storage/collector
+контракта — в [ADR-002](../decisions/ADR-002-m2a-snapshots.md).
 
 1. **Адаптеры ОС** получают ограниченные наблюдения. Linux-пути, systemd, subprocess
    и особенности прав находятся здесь. Никакого выполнения текста из telemetry.
