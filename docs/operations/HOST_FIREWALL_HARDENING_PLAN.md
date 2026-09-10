@@ -128,7 +128,8 @@ WAN/router verification — отдельная работа, не вывод и�
    содержит restore --test, backup writes или ufw mutations. Дополнительные reads
    custom hook snippets требуют отдельного review с удалением чувствительных literals.
    Будущий restore `--test` согласуется отдельно.
-2. **Backup write:** install каталога, cp файлов, tee snapshots по приведённым путям.
+2. **Backup write:** приведённый bounded atomic snapshot helper создаёт staging
+   directory, копирует конфигурацию, сохраняет rules/sysctls и делает atomic rename.
    Это запись вне repo и требует approval, несмотря на отсутствие изменения policy.
 3. **Apply отдельно от preflight:** только `ufw enable` при верных defaults, включая
    IPv6 FORWARD DROP, boot persistence, возможные sysctl effects и проверенные hooks.

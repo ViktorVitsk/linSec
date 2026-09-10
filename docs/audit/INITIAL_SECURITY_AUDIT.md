@@ -128,6 +128,6 @@ iptables/ip6tables saves для nft/legacy, aa-status, ss с владельца�
 
 
 
-## 14. Приоритетные следующие действия
+## 14. Исторические рекомендации первоначального inventory
 [Publication redaction: private workstation observation/configuration omitted.]
 

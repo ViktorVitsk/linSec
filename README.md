@@ -34,12 +34,27 @@ Codex работает без root, с ограниченной сетью и sa
 Repository имеет Git history; результаты первоначального аудита об отсутствии
 Git являются историческими. Данные из sandbox не всегда описывают host namespace.
 
-Стратегия при появлении кода: отдельный project `.venv`, минимум dependencies
-с точными версиями/lock, без изменения system/user Python. Tests используют
-синтетические данные; subprocess — фиксированные argv, validation и bounds,
-без исполнения текста telemetry. Сейчас проверяются Markdown links и diff;
-runtime tests приложения отсутствуют, поскольку приложения ещё нет.
-В Git не включаются реальные `.env`, credentials, raw telemetry и runtime databases.
+Стратегия при появлении кода: `uv` управляет project `.venv`, dependency groups
+и `uv.lock`; system/user Python не изменяется. Версия development interpreter
+закреплена в `.python-version`, environment metadata и lint policy — в
+`pyproject.toml`; runtime dependencies пока пусты. `uv.lock` должен создаваться
+и обновляться только самим `uv`, а затем храниться в Git.
+Repository-level safety gate находится в `scripts/check_m0.py`, его regression
+tests — в `tests/test_m0_safety.py` и используют только standard library:
+
+```bash
+uv sync
+uv run python scripts/check_m0.py
+uv run python -m unittest discover -s tests -v
+uv run ruff check .
+```
+
+Tests используют синтетические данные; subprocess — фиксированные argv,
+validation, timeout и bounds, без исполнения текста telemetry. Runtime tests
+приложения отсутствуют, поскольку приложения ещё нет. Не использовать `pip`
+для ad-hoc изменений окружения; зависимости объявляются в `pyproject.toml`, а
+точные версии разрешаются в `uv.lock`. В Git не включаются реальные `.env`,
+credentials, raw telemetry и runtime databases.
 
 ## Граница будущей автоматизации
 
