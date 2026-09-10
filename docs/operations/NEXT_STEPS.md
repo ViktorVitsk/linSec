@@ -1,46 +1,40 @@
-# Следующие действия после read-only inventory
+# Следующие действия — завершение M1
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
 Historical M1 record: the scoped assessment/change stage was recorded complete; this is not a current security attestation. Exact host decisions, residual private findings and recovery inventory are withheld.
 
-## Текущий шаг M1 — host firewall
+## 1. Host firewall — завершено
 
 [Publication redaction: private workstation observation/configuration omitted.]
 
 
 
-## 1. Учесть ручное дополнение E10 и оставшиеся unknowns M1
+## 2. Следующий обязательный шаг — backup / recovery
 
 [Publication redaction: private workstation observation/configuration omitted.]
 
 
 
-## 2. Подтвердить recovery до изменений
+## 3. Docker — обязательные решения P1
 
 [Publication redaction: private workstation observation/configuration omitted.]
 
 
 
-## 3. Принять решения по наиболее важным findings
+## 4. Deferred — не блокируют M1 в текущем scope
 
 [Publication redaction: private workstation observation/configuration omitted.]
 
 
 
-## 4. Завершить небольшой M0
+## 5. [router model withheld] — минимальный manual checklist
 
 [Publication redaction: private workstation observation/configuration omitted.]
 
 
 
-## 5. [router model withheld] — отдельный будущий manual checklist
-
-[Publication redaction: private workstation observation/configuration omitted.]
-
-
-
-## Пять фактов этой машины простым языком
+## Условие завершения M1
 
 [Publication redaction: private workstation observation/configuration omitted.]
 
