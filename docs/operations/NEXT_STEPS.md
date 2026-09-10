@@ -4,6 +4,12 @@
 
 Historical M1 record: the scoped assessment/change stage was recorded complete; this is not a current security attestation. Exact host decisions, residual private findings and recovery inventory are withheld.
 
+## Текущий шаг M1 — host firewall
+
+[Publication redaction: private workstation observation/configuration omitted.]
+
+
+
 ## 1. Учесть ручное дополнение E10 и оставшиеся unknowns M1
 
 [Publication redaction: private workstation observation/configuration omitted.]

@@ -71,7 +71,6 @@ iptables/ip6tables saves для nft/legacy, aa-status, ss с владельца�
 сетевые probes, изменение services/firewall/Docker, browser/router login.
 Сырые логи, environment dumps, private SSH keys и backup contents не сохранялись.
 Внешняя документация проверена отдельно без телеметрии хоста.
-
 ## 3. Current attack surface и платформа
 [Publication redaction: private workstation observation/configuration omitted.]
 
