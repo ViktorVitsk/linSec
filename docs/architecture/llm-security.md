@@ -4,6 +4,9 @@
 
 Дата решения: 2026-09-10. Статус: **требования M2b, не реализованная защита**.
 Основа — [архитектура](overview.md) и [правила безопасности](../operations/safety-rules.md).
+Уточнение 2026-09-11: [границы доверия перед M2b](trust-boundaries.md). Локальная
+SQLite, accepted baseline и terminal escaping не делают evidence доверенным или
+готовым для cloud export. Baseline — acknowledged state, не clean ground truth.
 
 ## Граница полномочий
 

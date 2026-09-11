@@ -11,9 +11,9 @@ Project Python 3.13, uv, `.venv`, точные зависимости в `uv.loc
 Уже подготовленная среда проверяется без sync/download:
 
 ```bash
-uv run --no-sync python scripts/check_m0.py
-uv run --no-sync python -m unittest discover -s tests -v
-uv run --no-sync ruff check --no-cache .
+uv run --cache-dir .cache/uv --no-sync python scripts/check_m0.py
+uv run --cache-dir .cache/uv --no-sync python -m unittest discover -s tests -v
+uv run --cache-dir .cache/uv --no-sync ruff check --no-cache .
 git diff --check
 ```
 
@@ -63,6 +63,26 @@ Gate не сканирует содержимое secrets, Git history или ho
 данными. Ruff получает опасно выглядящие snippets через stdin только для анализа.
 Тесты не исполняют snippets, не читают host telemetry и не запускают Docker/services.
 Они проверяют поведение, а не наличие фраз в историческом firewall plan.
+
+M2a добавляет synthetic acceptance tests SQLite/collectors/CLI. Fixtures не запускают
+host collectors: bounded subprocess проверяется фиксированными harmless argv на
+synthetic data. Hostile strings проверяются через DB/diff/explain/CLI, включая C1,
+ANSI/OSC, bidi, размеры/encoding и minimization. Test data не содержит реальных secrets.
+
+## Граница coding agent
+
+Coding agent, его зависимости и исполняемый build/test code считаются потенциально
+недоверенными процессами. По умолчанию используются project-scoped операции; доступ
+за workspace должен быть минимальным и необходимым конкретной задаче. Не наследуйте
+и не используйте автоматически sudo, rootful Docker socket/API, arbitrary home,
+credentials, browser sessions, SSH-agent forwarding или privileged containers.
+Не проверяйте доступ к ним произвольными probe-командами ради удобства разработки.
+Каждое system-changing действие требует порядка approval глобальной политики.
+
+Это правила разработки, не доказательство технической изоляции текущего процесса.
+AGENTS/Ruff/venv не являются sandbox. Изоляция worker и Docker privilege model
+разбираются отдельно в M3; принятый риск dev→rootful Docker остаётся видимым и
+не разрешает агенту эту цепочку. [Полное решение и residual risks](../architecture/trust-boundaries.md).
 
 ## CI
 

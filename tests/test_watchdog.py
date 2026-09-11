@@ -27,7 +27,7 @@ from security_orchestrator.cli import emit, main
 from security_orchestrator.config import Config, load_config
 from security_orchestrator.demo import replay
 from security_orchestrator.explanations import explain
-from security_orchestrator.model import Collection, InvalidInput, SOURCES
+from security_orchestrator.model import Collection, InvalidInput, SOURCES, MAX_PAYLOAD, decode_items
 from security_orchestrator.runtime import monitor_lock, run_monitor, service_status, set_disabled
 from security_orchestrator.store import Store
 
@@ -283,6 +283,110 @@ class WatchdogTests(unittest.TestCase):
         self.assertNotIn("\u202e", stream.getvalue())
         self.assertIn("Отсутствует", stream.getvalue())
 
+    def test_hostile_text_roundtrips_all_record_types_as_data_only(self):
+        self.baseline()
+        hostile = "x' ; DROP TABLE alerts; --\x1b]52;c;fake\x07\x9b31m\x7f\u202e\u2028\U000e0001"
+        data = {
+            "tcp4": {"port": endpoint("/synthetic/" + hostile)},
+            "accounts": {
+                "uid0:" + hostile: {"kind": "uid0", "name": hostile, "uid": 0, "gid": 0},
+                "group:" + hostile: {
+                    "kind": "group",
+                    "name": hostile,
+                    "gid": 999,
+                    "members": [hostile],
+                },
+            },
+            "systemd_user": {
+                "unit:" + hostile: {
+                    "kind": "unit",
+                    "name": hostile + ".service",
+                    "scope": "user",
+                    "enablement": "enabled",
+                }
+            },
+            "persistence": {"file:" + hostile: {**file_item(), "path": "/synthetic/" + hostile}},
+        }
+        self.scan(data)
+        self.assertEqual(5, len(self.app.alerts()))
+        for alert in self.app.alerts():
+            output = io.StringIO()
+            detail = explain(self.app, alert["id"])
+            with redirect_stdout(output):
+                emit(detail)
+            for character in ("\x1b", "\x07", "\x9b", "\x7f", "\u202e", "\u2028", "\U000e0001"):
+                self.assertNotIn(character, output.getvalue())
+            self.assertEqual(detail, json.loads(output.getvalue()))
+            self.assertNotIn("wan_reachable", detail)
+        self.assertEqual(5, self.store.db.execute("SELECT count(*) FROM alerts").fetchone()[0])
+
+    def test_secret_like_source_contents_are_minimized_before_storage(self):
+        self.baseline()
+        marker = "SYNTHETIC_PRIVATE_VALUE_NOT_A_CREDENTIAL"
+        path = Path(self.temp.name) / "synthetic.service"
+        path.write_text("[Service]\nEnvironment=PRIVATE=" + marker + "\n")
+        file = fingerprint(path)
+        account = parse_accounts(
+            "test:" + marker + ":0:0:private:/home/test:/bin/test\n",
+            "root:" + marker + ":0:test\n",
+            ("root",),
+        )
+        socket = parse_ss(
+            "LISTEN 0 128 127.0.0.1:8080 "
+            + marker
+            + ' users:(("'
+            + marker
+            + '",pid=42,fd=3)) uid:1000 ino:123 sk:1',
+            "tcp",
+            4,
+            lambda *a: {"exe": "/synthetic/server", "uid": 1000},
+        )
+        self.scan({"systemd_user": {"file": file}, "accounts": account, "tcp4": socket})
+        # Verify persisted evidence and the final explanation, not merely parser output.
+        persisted = "".join(row[0] for row in self.store.db.execute("SELECT data FROM snapshots"))
+        rendered = json.dumps([explain(self.app, a["id"]) for a in self.app.alerts()])
+        self.assertNotIn(marker, persisted + rendered)
+        self.assertNotIn("Environment=", persisted + rendered)
+
+    def test_bad_stored_evidence_is_rejected_before_diff_or_explanation(self):
+        self.baseline()
+        self.scan({"tcp4": {"port": endpoint()}})
+        alert = self.app.alerts()[0]
+        for payload in (
+            '{"nested":' + "[" * 1500 + "0" + "]" * 1500 + "}",
+            '{"bad":"SYNTHETIC_PRIVATE_MARKER"}',
+            "x" * (MAX_PAYLOAD + 1),
+        ):
+            with self.subTest(length=len(payload)):
+                self.store.db.execute(
+                    "UPDATE snapshots SET data=? WHERE id=?", (payload, alert["after_id"])
+                )
+                with self.assertRaises(InvalidInput) as error:
+                    explain(self.app, alert["id"])
+                self.assertNotIn("SYNTHETIC_PRIVATE_MARKER", str(error.exception))
+
+    def test_partial_union_cannot_exceed_record_budget(self):
+        self.baseline()
+        self.scan({"persistence": {"first": file_item()}})
+        with patch("security_orchestrator.model.MAX_ITEMS", 1):
+            with self.assertRaises(InvalidInput):
+                self.scan({"persistence": {"second": file_item("b")}}, {"persistence": "partial"})
+        self.assertTrue(self.app.status()["last_storage_write_failed"])
+        with self.assertRaises(InvalidInput):
+            self.app.baseline_preview()
+
+    def test_notifications_never_receive_alert_strings(self):
+        from security_orchestrator.adapters.linux import COMMANDS
+
+        self.baseline()
+        marker = "/synthetic/PRIVATE_MARKER\x9b31m"
+        self.scan({"tcp4": {"port": endpoint(marker)}})
+        self.app.config = replace(self.config, notifications=True)
+        with patch("security_orchestrator.adapters.linux.command") as send:
+            self.app.notify(lambda: send("notify"))
+            send.assert_called_once_with("notify")
+        self.assertNotIn(marker, " ".join(COMMANDS["notify"]))
+
     def test_invalid_payload_is_rejected_before_transaction(self):
         self.baseline()
         data = endpoint()
@@ -331,6 +435,33 @@ class WatchdogTests(unittest.TestCase):
 
 
 class LinuxBoundaryTests(unittest.TestCase):
+    def test_invalid_encoding_is_unavailable_and_never_printed(self):
+        with patch.dict(
+            "security_orchestrator.adapters.linux.COMMANDS",
+            {"test": ("/usr/bin/printf", "%b", "\\377")},
+        ):
+            with self.assertRaisesRegex(SourceError, "invalid_input"):
+                command("test")
+
+    def test_environment_is_allowlisted_not_inherited(self):
+        from security_orchestrator.adapters import linux
+
+        original = linux.subprocess.Popen
+        with patch.dict(
+            os.environ,
+            {
+                "SYNTHETIC_PRIVATE_VALUE": "do_not_inherit",
+                "SYSTEMD_UNIT_PATH": "/synthetic/hostile",
+            },
+        ):
+            with patch.object(linux.subprocess, "Popen", wraps=original) as launch:
+                with patch.dict(linux.COMMANDS, {"test": ("/usr/bin/printf", "ok")}):
+                    self.assertEqual("ok", command("test"))
+                env = launch.call_args.kwargs["env"]
+                self.assertNotIn("SYNTHETIC_PRIVATE_VALUE", env)
+                self.assertNotIn("SYSTEMD_UNIT_PATH", env)
+                self.assertEqual(False, launch.call_args.kwargs["shell"])
+
     def test_ss_ipv4_ipv6_udp_connected_and_root_uid(self):
         def owner(*args):
             return {"exe": "/synthetic/server", "uid": 1000}
@@ -443,6 +574,33 @@ class LinuxBoundaryTests(unittest.TestCase):
 
 
 class ConfigurationAndCliTests(unittest.TestCase):
+    def test_hostile_argument_error_omits_values(self):
+        output = io.StringIO()
+        with redirect_stderr(output), self.assertRaises(SystemExit) as error:
+            main(["explain", "SYNTHETIC_PRIVATE_MARKER\x9b31m"])
+        self.assertEqual(2, error.exception.code)
+        self.assertNotIn("SYNTHETIC_PRIVATE_MARKER", output.getvalue())
+        self.assertNotIn("\x9b", output.getvalue())
+
+    def test_pathological_shapes_and_lengths_fail_closed(self):
+        for mutate in (
+            lambda d: d.update(kind=[]),
+            lambda d: d.update(bind={}),
+            lambda d: d.update(port=None),
+            lambda d: d.update(uid=True),
+            lambda d: d.update(owners=[{"exe": "/" + "x" * 5000, "uid": 1000}]),
+            lambda d: d.update(owners=[{"exe": "/x", "uid": None}]),
+        ):
+            data = endpoint()
+            mutate(data)
+            with self.assertRaises(InvalidInput):
+                Collection("tcp4", {"port": data}).validate()
+        for field in ("status", "reason"):
+            with self.assertRaises(InvalidInput):
+                Collection("tcp4", **{field: []}).validate()
+        with self.assertRaises(InvalidInput):
+            decode_items("[" * 2000 + "0" + "]" * 2000)
+
     def test_configuration_rejects_unknown_keys_ai_and_invalid_limits(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "config.toml"

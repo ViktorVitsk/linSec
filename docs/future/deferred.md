@@ -5,6 +5,17 @@
 Дата: 2026-09-10. Статус: контекст и ограничения; не текущие задачи.
 Приоритеты и момент реализации определяет [roadmap](../ROADMAP.md).
 
+## Независимое evidence и tamper resistance
+
+Уточнение 2026-09-11: user watchdog, SQLite/audit/config и код под dev не защищены
+от attacker под тем же UID/root. Независимые heartbeat, append-only storage,
+отдельная trusted collection boundary или attestation требуют отдельного полезного
+дизайна с независимым trust anchor. Не добавлять root daemon/remote stack в M2a ради
+формального закрытия. До реализации не обещать self-protection или tamper-resistant
+audit. Developer worker isolation и rootful Docker posture относятся к M3/отдельному
+согласованному host change; политика least privilege coding agent применяется уже
+сейчас. [Решения и остаточные риски](../architecture/trust-boundaries.md).
+
 ## Windows и другие Linux hosts
 
 Сейчас переносимы модели данных и detection core, не сенсоры. OS-specific paths,

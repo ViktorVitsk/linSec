@@ -3,6 +3,7 @@
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 import hashlib
+import ipaddress
 import json
 
 
@@ -62,6 +63,7 @@ def validate_items(items: dict) -> None:
         "uid0": {"kind", "name", "uid", "gid"},
         "group": {"kind", "name", "gid", "members"},
     }
+    size = 2
     for key, data in items.items():
         if not text_field(key) or not isinstance(data, dict):
             raise InvalidInput("invalid_inventory")
@@ -101,6 +103,12 @@ def validate_items(items: dict) -> None:
                     raise InvalidInput("invalid_owner")
             if data["context_complete"] and not data["owners"]:
                 raise InvalidInput("missing_owner")
+            try:
+                address = ipaddress.ip_address(data["bind"].split("%", 1)[0])
+                if address.version != data["family"]:
+                    raise ValueError
+            except ValueError as error:
+                raise InvalidInput("invalid_bind_address") from error
         if kind == "group" and (
             not isinstance(data["members"], list)
             or len(data["members"]) > MAX_ITEMS
@@ -122,8 +130,21 @@ def validate_items(items: dict) -> None:
             raise InvalidInput("invalid_privileged_account")
         if kind == "group" and data["gid"] is None:
             raise InvalidInput("invalid_group_gid")
-    if len(encode(items)) > MAX_PAYLOAD:
-        raise InvalidInput("inventory_limit")
+        # Check one bounded record at a time, not one giant temporary JSON representation.
+        size += len(encode(key)) + len(encode(data)) + 2
+        if size > MAX_PAYLOAD:
+            raise InvalidInput("inventory_limit")
+
+
+def decode_items(raw: str) -> dict:
+    if not isinstance(raw, str) or len(raw) > MAX_PAYLOAD:
+        raise InvalidInput("stored_evidence_limit")
+    try:
+        items = json.loads(raw)
+        validate_items(items)
+        return items
+    except (ValueError, TypeError, RecursionError) as error:
+        raise InvalidInput("invalid_stored_evidence_contents_omitted") from error
 
 
 @dataclass
@@ -136,9 +157,14 @@ class Collection:
     collected_at: str = field(default_factory=now)
 
     def validate(self) -> None:
-        if self.source not in SOURCES or self.status not in {"ok", "partial", "unavailable"}:
+        if (
+            not isinstance(self.source, str)
+            or self.source not in SOURCES
+            or not isinstance(self.status, str)
+            or self.status not in {"ok", "partial", "unavailable"}
+        ):
             raise InvalidInput("invalid_collection")
-        if self.reason not in {
+        if not isinstance(self.reason, str) or self.reason not in {
             "none",
             "access_or_io",
             "invalid_input",
@@ -154,12 +180,25 @@ class Collection:
             raise InvalidInput("invalid_diagnostic")
         if not text_field(self.scope) or self.status == "unavailable" and self.items:
             raise InvalidInput("invalid_scope")
+        if not text_field(self.collected_at, 64):
+            raise InvalidInput("invalid_timestamp")
         try:
             if datetime.fromisoformat(self.collected_at).utcoffset().total_seconds() != 0:
                 raise ValueError
         except (TypeError, ValueError, AttributeError) as error:
             raise InvalidInput("invalid_timestamp") from error
         validate_items(self.items)
+        kinds = (
+            {"endpoint"}
+            if self.source[:3] in {"tcp", "udp"}
+            else {"unit", "file"}
+            if self.source.startswith("systemd_")
+            else {"uid0", "group"}
+            if self.source == "accounts"
+            else {"file"}
+        )
+        if any(data["kind"] not in kinds for data in self.items.values()):
+            raise InvalidInput("source_kind_mismatch")
 
 
 def changes(before: dict, after: dict, *, complete: bool) -> list[dict]:

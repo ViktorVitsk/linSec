@@ -52,7 +52,10 @@ Partial/unavailable/config change/stale дают degraded; exit 2 у scan/status
 его с exit 2. Для возврата в рабочее состояние устраните причину и выполните новый scan.
 
 Первый снимок не known-good. Просмотрите весь `baseline diff`, включая context
-warnings и scope. После review скопируйте точный `approval_token` в команду:
+warnings и scope. **Принятый baseline — known/acknowledged state, не clean state;
+он может описывать уже скомпрометированную машину.** Детали:
+[trust boundaries](../architecture/trust-boundaries.md). После review скопируйте
+точный `approval_token` в команду:
 
 ```text
 sec baseline update --approve TOKEN_FROM_DIFF --reason "Причина принятия без secrets"
@@ -139,6 +142,13 @@ supplementary group membership, partial/unavailable, перезапуск, inval
 expiry/remove, stale baseline approval, notifications и kill switch.
 Никаких attack samples, host configuration changes, Docker или реального desktop bus
 в тестах. Отдельная foreground демонстрация использовала доступные read-only sources.
+
+Проверка после trust-boundary review 2026-09-11: **59 tests — PASS**, repository
+hygiene, Ruff, offline lock check и `git diff --check` — PASS. Wheel собран offline;
+проверены entry point `sec` и состав архива: только пакет/dist-info, без runtime,
+SQLite, кэшей и credentials. Input/minimization fixes и отложенные решения описаны
+в [trust boundaries](../architecture/trust-boundaries.md). Это локальные проверки,
+не результат удалённого CI и не завершение семидневного trial.
 
 [Publication redaction: private workstation observation/configuration omitted.]
 

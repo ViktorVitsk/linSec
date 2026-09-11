@@ -1,20 +1,22 @@
 """Shared scan, baseline, alert and exception operations for CLI and future UI."""
 
 from datetime import datetime, timedelta
-import json
 
 from .config import Config
 from .model import (
     COLLECTOR_VERSION,
     SCHEMA_VERSION,
     SOURCES,
+    MAX_PAYLOAD,
     Collection,
     InvalidInput,
     changes,
     detector,
+    decode_items,
     digest,
     encode,
     now,
+    validate_items,
 )
 from .store import Store
 
@@ -26,10 +28,13 @@ class Application:
     def snapshot(self, snapshot_id: int | None) -> dict:
         if snapshot_id is None:
             return {}
-        row = self.db.execute("SELECT data FROM snapshots WHERE id=?", (snapshot_id,)).fetchone()
+        # Corrupt or locally edited database content remains untrusted on read as well as write.
+        row = self.db.execute(
+            "SELECT substr(data,1,?) FROM snapshots WHERE id=?", (MAX_PAYLOAD + 1, snapshot_id)
+        ).fetchone()
         if row is None:
             raise InvalidInput("missing_evidence")
-        return json.loads(row[0])
+        return decode_items(row[0])
 
     def audit(self, action: str, detail: object) -> None:
         self.db.execute(
@@ -70,6 +75,11 @@ class Application:
                 old_id = prior["snapshot_id"] if same_scope else None
                 old_items = self.snapshot(old_id)
                 current = dict(result.items) if result.status == "ok" else old_items | result.items
+                try:
+                    validate_items(current)
+                except InvalidInput:
+                    self.store.mark_storage_error(True)
+                    raise
                 snapshot_id = old_id
                 if result.status != "unavailable":
                     fingerprint = digest([current, result.scope, result.status])
@@ -265,7 +275,7 @@ class Application:
             ),
             "baseline_revision": status["baseline_revision"],
             "proposed": proposed,
-            "meaning": "Подтверждение доверяет только этому снимку, не доказывает безопасность хоста.",
+            "meaning": "Baseline = known/acknowledged state, не clean state. Даже первый baseline может описывать уже скомпрометированную машину.",
         }
 
     def baseline_preview(self) -> dict:

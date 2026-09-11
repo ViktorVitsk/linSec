@@ -63,7 +63,9 @@ Raw logs сохранять только при доказанной необх�
 
 ## Baseline, ошибки и настройка шума
 
-Первый снимок — кандидат, а не автоматически known-good состояние. Аудит M1 не
+Baseline означает known/acknowledged state, **не clean state**; первый baseline
+может быть принят на уже скомпрометированном хосте. Первый снимок — кандидат, а не
+автоматически принятое состояние. Аудит M1 не
 импортируется как доверенный baseline. Принятие требует diff и явного решения.
 Подтверждение относится к конкретной версии снимка: изменение между preview и
 применением требует нового diff, а не незаметного принятия новых данных.
@@ -112,3 +114,7 @@ Kill switch останавливает только orchestrator и его ра�
 SQLite и код под тем же пользователем не дают tamper-proof защиты от компрометации
 этой учётной записи или root. Мониторинг дополняет updates, isolation и recovery.
 Настоящие runtime-данные и credentials не хранятся в Git, CI или cloud traces.
+
+Границы watchdog, hostile evidence, baseline, minimization и coding agent и
+распределение решений между M2b/M3/residual risk — [trust boundaries](trust-boundaries.md).
+AI в M2b не повышает доверие к источникам и не получает полномочия coding-agent процесса.

@@ -22,6 +22,12 @@ multi-tenant и SaaS сейчас не посвящаем отдельную а�
   покрытия workstation. User service не установлен, семидневный trial не выполнен.
 - M2b/M2c/M3: **ещё не реализованы**. AI integration и локальной UI нет.
 
+Уточнение 2026-09-11 перед M2b: [границы доверия](architecture/trust-boundaries.md).
+Исправлены C1/DEL terminal escaping, проверка сохранённого evidence и лимит partial
+union; hostile-input/minimization scenarios добавлены в acceptance tests. Baseline
+явно acknowledged, не clean state. Same-UID tampering принят как residual risk;
+LLM export/action boundary относится к M2b, Docker/worker isolation — к M3/отдельным изменениям.
+
 Текущая поставка — код M2a и синтетическая демонстрация. Ближайший шаг: проверить
 host coverage в обычном пользовательском окружении, просмотреть baseline и провести
 семь дней эксплуатации. [Процедура и ограничения](operations/M2A-WATCHDOG.md).
@@ -71,11 +77,9 @@ local runtime benchmark, schema validation, redaction/privacy preview, budgets,
 до пяти шагов, отказоустойчивый deterministic fallback, учебные synthetic scenarios.
 Модель и runtime выбирать по сравнительным измерениям, не по предположению о GPU.
 
-Приёмка: injection остаётся данными; запрещённая операция не исполняется;
-выдуманный evidence ID отклоняется; новые данные не обходят cloud preview;
-превышение лимита останавливает расследование, монитор продолжает работать.
-Качество русского объяснения и обоснованность фактов оценивает человек.
-Контракт: [LLM security](architecture/llm-security.md).
+[Publication redaction: private workstation observation/configuration omitted.]
+
+
 
 ## M2c — Надёжность и локальная UI
 

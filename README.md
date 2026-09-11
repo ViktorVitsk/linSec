@@ -22,6 +22,7 @@ Systemd service не устанавливался; AI integration отсутст
 - [Правила безопасности](docs/operations/safety-rules.md).
 - [Запуск M2a, CLI и приёмка](docs/operations/M2A-WATCHDOG.md).
 - [Детекторы и ручная проверка](docs/detections/M2A-WATCHDOG.md).
+- [Trust boundaries: watchdog, hostile evidence и coding agent](docs/architecture/trust-boundaries.md).
 
 ## Попробовать безопасный пример
 

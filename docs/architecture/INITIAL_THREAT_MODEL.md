@@ -15,6 +15,10 @@
 
 
 
+Уточнение 2026-09-11 после реализации M2a: [границы доверия](trust-boundaries.md)
+отдельно рассматривают tampering by the local user/root, hostile evidence, acknowledged baseline,
+minimization и coding-agent процесс. Исходные host observations ниже остаются датированными.
+
 ## Что защищаем
 
 - Исходники, Git identity, API/SSH credentials и developer configuration.

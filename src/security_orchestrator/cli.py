@@ -18,15 +18,27 @@ from .store import Store, private_directory
 def emit(value: object) -> None:
     output = json.dumps(value, ensure_ascii=False, indent=2)
     output = "".join(
-        f"\\u{ord(c):04x}" if unicodedata.category(c) in {"Cf", "Cs"} else c for c in output
+        json.dumps(c, ensure_ascii=True)[1:-1]
+        if (
+            unicodedata.category(c) in {"Cf", "Cs", "Zl", "Zp"}
+            or unicodedata.category(c) == "Cc"
+            and c != "\n"
+        )
+        else c
+        for c in output
     )
     print(output, flush=True)
 
 
+class SafeArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        # argparse normally echoes invalid argument values, potentially including credentials.
+        self.print_usage(sys.stderr)
+        self.exit(2, "sec: invalid arguments (values omitted); use --help\n")
+
+
 def parser() -> argparse.ArgumentParser:
-    root = argparse.ArgumentParser(
-        prog="sec", description="Локальный watchdog без AI и remediation"
-    )
+    root = SafeArgumentParser(prog="sec", description="Локальный watchdog без AI и remediation")
     root.add_argument(
         "--state", type=Path, default=Path("runtime/watchdog"), help="Приватный каталог состояния"
     )
