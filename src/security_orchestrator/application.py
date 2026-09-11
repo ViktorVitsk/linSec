@@ -21,6 +21,11 @@ from .model import (
 from .store import Store
 
 
+PENDING_NOTIFICATIONS_SQL = """SELECT a.id FROM alerts a WHERE a.active=1 AND a.lifecycle!='closed'
+            AND a.notified=0 AND NOT EXISTS (SELECT 1 FROM exceptions e WHERE e.context=a.context
+            AND (e.expires_at IS NULL OR e.expires_at>?)) ORDER BY a.id"""
+
+
 class Application:
     def __init__(self, store: Store, config: Config, clock=now):
         self.store, self.db, self.config, self.clock = store, store.db, config, clock
@@ -456,12 +461,17 @@ class Application:
         return [
             row[0]
             for row in self.db.execute(
-                """SELECT a.id FROM alerts a WHERE a.active=1 AND a.lifecycle!='closed'
-            AND a.notified=0 AND NOT EXISTS (SELECT 1 FROM exceptions e WHERE e.context=a.context
-            AND (e.expires_at IS NULL OR e.expires_at>?)) ORDER BY a.id""",
+                PENDING_NOTIFICATIONS_SQL,
                 (self.clock(),),
             )
         ]
+
+    def pending_notification_count(self) -> int:
+        # Both transports use the exact existing eligibility predicate; no materialized ID list.
+        return self.db.execute(
+            "SELECT count(*) FROM (" + PENDING_NOTIFICATIONS_SQL + ")",  # noqa: S608 -- fixed internal SQL
+            (self.clock(),),
+        ).fetchone()[0]
 
     def notify(self, send) -> dict:
         ids = self.pending_notifications()

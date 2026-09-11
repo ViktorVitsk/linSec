@@ -2,8 +2,8 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
-Дата решения: 2026-09-10, обновление 2026-09-11.
-Статус: **M2a foreground runtime и отдельный M2b реализованы**; M2a real-host trial
+Дата решения: 2026-09-10, обновление 2026-09-12.
+Статус: **M2a foreground runtime, отдельный M2b и opt-in M2c реализованы**; M2a real-host trial
 и M2b real-provider/model acceptance ещё открыты.
 Порядок работ — [roadmap](../ROADMAP.md). Обоснование стека —
 [ADR-001](../decisions/ADR-001-local-modular-core.md).
@@ -125,3 +125,16 @@ SQLite и код под тем же пользователем не дают tam
 Границы watchdog, hostile evidence, baseline, minimization и coding agent и
 распределение решений между M2b/M3/residual risk — [trust boundaries](trust-boundaries.md).
 AI в M2b не повышает доверие к источникам и не получает полномочия coding-agent процесса.
+
+## M2c — отдельная reliability и локальный интерфейс
+
+[ADR-004](../decisions/ADR-004-m2c-reliability-local-ui.md) сохраняет main SQLite v2
+и существующий monitor во время trial. Новый monitor-reliable и отдельная sidecar
+SQLite v1 реализуют cursor/checkpoint, explicit gaps и pending reconciliation.
+Journal hints не создают второй detection engine; старые collectors используются
+без изменений. [Полный contract и feasibility](M2C-RELIABILITY.md).
+
+`sec view` и read-only local UI используют Queries/Application.status/PackBuilder.
+Bearer + exact Host/Origin, deny mutations, bounded data и inert rendering:
+[threat model](M2C-UI-SECURITY.md). LLM из браузера не запускается.
+[Operator acceptance](../operations/M2C-LOCAL-UI.md) выполняется отдельно от trial.

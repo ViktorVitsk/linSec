@@ -38,7 +38,9 @@ class SafeArgumentParser(argparse.ArgumentParser):
 
 
 def parser() -> argparse.ArgumentParser:
-    root = SafeArgumentParser(prog="sec", description="Локальный watchdog; AI отдельно, без remediation")
+    root = SafeArgumentParser(
+        prog="sec", description="Локальный watchdog; AI отдельно, без remediation"
+    )
     root.add_argument(
         "--state", type=Path, default=Path("runtime/watchdog"), help="Приватный каталог состояния"
     )
@@ -52,11 +54,36 @@ def parser() -> argparse.ArgumentParser:
     investigation = commands.add_parser("investigate", help="M2b: read-only evidence и optional AI")
     investigation.add_argument("id", type=int)
     investigation.add_argument("--ai-config", type=Path)
-    investigation.add_argument("--run", action="store_true", help="Явный запуск с review каждого запроса")
+    investigation.add_argument(
+        "--record-state",
+        type=Path,
+        help="Opt-in M2c timeline; requires --run; separate private directory",
+    )
+    investigation.add_argument(
+        "--run", action="store_true", help="Явный запуск с review каждого запроса"
+    )
     investigation.add_argument("--approve", help="Токен только первого точного preview")
     benchmark = commands.add_parser("ai-benchmark", help="M2b: отдельные synthetic scenarios")
     benchmark.add_argument("--ai-config", type=Path)
-    benchmark.add_argument("--run", action="store_true", help="Запустить явно настроенный local runtime")
+    benchmark.add_argument(
+        "--run", action="store_true", help="Запустить явно настроенный local runtime"
+    )
+    view = commands.add_parser("view", help="M2c: общие с UI read-only queries; без migrations")
+    view.add_argument("id", type=int, nargs="?")
+    view.add_argument("--alerts", action="store_true")
+    view.add_argument("--limit", type=int, default=25)
+    view.add_argument("--before", type=int, default=2**63 - 1)
+    view.add_argument("--m2c-state", type=Path)
+    ui = commands.add_parser("ui", help="Локальная read-only UI; ключ через скрытый ввод")
+    ui.add_argument("--bind", default="127.0.0.1")
+    ui.add_argument("--port", type=int, default=8765)
+    ui.add_argument("--m2c-state", type=Path)
+    reliable = commands.add_parser(
+        "monitor-reliable", help="Opt-in M2c runtime; активировать после trial review"
+    )
+    reliable.add_argument("--m2c-state", type=Path, required=True)
+    reliable.add_argument("--iterations", type=int, default=0)
+    commands.add_parser("m2c-demo", help="Только synthetic data в новом изолированном каталоге")
     monitor = commands.add_parser("monitor")
     monitor.add_argument("--iterations", type=int, default=0, help="0: до Ctrl-C или sec disable")
     lifecycle = commands.add_parser("alert")
@@ -100,6 +127,10 @@ def main(argv: list[str] | None = None) -> int:
             raise InvalidInput("CLI_requires_Linux_core_is_portable")
         if args.command in {"investigate", "ai-benchmark"}:
             from .investigation.cli import dispatch
+
+            return dispatch(args, config, emit)
+        if args.command in {"view", "ui", "monitor-reliable", "m2c-demo"}:
+            from .reliability.cli import dispatch
 
             return dispatch(args, config, emit)
         from . import runtime

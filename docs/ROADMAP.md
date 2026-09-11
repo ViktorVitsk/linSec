@@ -2,7 +2,7 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
-Дата обновления: 2026-09-11. Статус: **актуальный согласованный порядок разработки**.
+Дата обновления: 2026-09-12. Статус: **актуальный согласованный порядок разработки**.
 Заменяет прежнюю последовательность M2 → M3 → M4 AI → M5 UX из исходного AGENTS.
 Цель — личный рабочий инструмент и обучение через реальные события. Компаниям,
 multi-tenant и SaaS сейчас не посвящаем отдельную архитектуру.
@@ -26,7 +26,13 @@ multi-tenant и SaaS сейчас не посвящаем отдельную а�
   [Запуск и границы](operations/M2B-INVESTIGATION.md). Реальные provider/model acceptance,
   local runtime/GPU сравнительные измерения и оценка русского объяснения человеком открыты.
   AI выключен по умолчанию; во время разработки cloud/host inference не выполнялись.
-- M2c/M3: **не начаты**. UI и расширение sensors отсутствуют.
+- M2c: **код и synthetic acceptance реализованы**: отдельная reliability SQLite v1,
+  bounded user-systemd journal hints, cursor/dedup/typed gaps, opt-in reconciliation
+  runtime и read-only local UI с access control. [Контракты](architecture/M2C-RELIABILITY.md),
+  [приёмка/ограничения](operations/M2C-LOCAL-UI.md),
+  [итоговый отчёт](operations/M2C-IMPLEMENTATION.md). Host/browser acceptance открыта;
+  текущий trial не переводился на M2c, main DB остаётся v2.
+- M3: **не начат**.
 
 Уточнение 2026-09-11 перед M2b: [границы доверия](architecture/trust-boundaries.md).
 Исправлены C1/DEL terminal escaping, проверка сохранённого evidence и лимит partial
@@ -98,7 +104,7 @@ Scheduled reconciliation сохраняется. Потерянные событ
 
 Компактный локальный интерфейс: состояние мониторинга, список alerts, timeline
 расследования и обучение. Повторно использовать application services CLI.
-Конкретный UI framework выбирается при этом этапе; сейчас frontend не создаётся.
+Реализованы stdlib HTTP transport и локальные HTML/CSS/JS; dependencies не добавлены.
 Не выставлять API публично; loopback binding сам по себе не заменяет защиту
 доступа, Origin/CSRF и ограничение методов, если появится web server.
 

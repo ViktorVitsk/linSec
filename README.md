@@ -85,3 +85,16 @@ CI настроен на GitHub-hosted runner; локальные тесты н�
 провести семидневный foreground trial. M2b добавит ручное расследование с LLM/SLM
 после этой проверки. В M2a нет облачных запросов и host remediation;
 `LLM_ENABLED=false` сохраняет весь реализованный цикл.
+
+## M2c: reliability и local UI
+
+Реализованы отдельные cursor/gaps/dedup и read-only local UI. Существующий M2a
+monitor/SQLite v2 сохраняют поведение; новый `monitor-reliable` активируется отдельно
+после trial review. UI не запускает AI и не меняет baseline/alerts/host settings.
+
+- [Запуск, безопасность ключа и ручная приёмка](docs/operations/M2C-LOCAL-UI.md).
+- [Journald scope, gaps, reconciliation и schema](docs/architecture/M2C-RELIABILITY.md).
+- [Threat model локального интерфейса](docs/architecture/M2C-UI-SECURITY.md).
+
+`sec view` — read-only запросы без migration; `sec ui --help` — отдельный foreground
+интерфейс. Real-host/browser acceptance M2c ещё открыта, M3 не начат.

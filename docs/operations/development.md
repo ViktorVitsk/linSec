@@ -117,3 +117,14 @@ E01–E16. Старые statements с UNKNOWN/inactive не превращают
 Новый runtime обязан собрать актуальное состояние; Markdown не является baseline
 или инструкцией исполнить сохранённые команды. При изменении статуса указать дату,
 источник и заменяемую запись. Не переписывать историческое evidence задним числом.
+
+## M2c validation
+
+Новые synthetic tests: `test_reliability.py`, `test_local_ui.py`; cursor/rollback,
+gaps/partial, sidecar schema, shared queries, hostile input, HTTP restrictions и
+SQLite writer/readers. `node tests/ui_dom_test.cjs` исполняет настоящий UI JS с
+synthetic DOM без браузера, sockets или сети. Node не является runtime dependency.
+
+[Команды и ограничения полной проверки](M2C-LOCAL-UI.md#development-validation).
+Только новый runtime opt-in; не запускать его/демонстрационный UI на trial state
+автоматически. Main watchdog DB не мигрируется для M2c.

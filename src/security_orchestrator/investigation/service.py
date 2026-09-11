@@ -35,11 +35,17 @@ class Investigation:
         settings: Settings | None = None,
         provider: Provider | None = None,
         clock=time.monotonic,
+        trace=None,
     ):
         settings = settings or Settings()
         settings.validate()
         self.builder, self.settings = builder, settings
         self.provider, self.clock = provider or HTTPProvider(), clock
+        self.trace = trace
+
+    def _event(self, kind, code="none", operation="", step=0, evidence_ids=()):
+        if self.trace is not None:
+            self.trace.event(kind, code, operation, step, evidence_ids)
 
     def _request(self, pack, revision, operation_result, tokens_left, money_left):
         payload = {"evidence_pack": pack, "operation_result": operation_result}
@@ -136,6 +142,10 @@ class Investigation:
 
     def run(self, alert_id, approve=None):
         pack, revision = self.builder.build(alert_id)
+        self._event("trigger")
+        self._event(
+            "evidence_pack", "metadata_aliases_v1", evidence_ids=tuple(sorted(references(pack)))
+        )
         settings = self.settings
         if (
             not settings.llm_enabled
@@ -154,13 +164,17 @@ class Investigation:
         tokens_left, money_left = settings.total_tokens, settings.budget_microusd
         operation_result, history_limit = None, 0
         reason = "step_limit"
+        operation_pending = False
         try:
             for step in range(settings.max_steps):
                 preview = self._request(pack, revision, operation_result, tokens_left, money_left)
+                self._event("privacy_preview", "metadata_aliases_v1", step=step + 1)
                 if approve is None or approve(deepcopy(preview)) != preview["approval_token"]:
+                    self._event("privacy_rejected", "privacy_approval_required", step=step + 1)
                     result = fallback(pack, "privacy_approval_required")
                     result.update(preview=preview, ledger=ledger)
                     return result
+                self._event("privacy_accepted", "validated", step=step + 1)
                 # Reject data/coverage/baseline drift while a person reviews the request.
                 fresh, fresh_revision = self.builder.build(alert_id, history_limit)
                 require(
@@ -181,6 +195,7 @@ class Investigation:
                 }
                 ledger.append(entry)
                 call_at = self.clock()
+                self._event("provider_request", step=step + 1)
                 reply = self.provider.complete(
                     deepcopy(preview["request_body"]),
                     settings,
@@ -206,6 +221,7 @@ class Investigation:
                     and reply.cost_microusd <= preview["cost_reserve_microusd"],
                     "provider_usage_exceeds_reserve",
                 )
+                self._event("provider_result", step=step + 1)
                 data = validate_response(reply.text, references(pack))
                 entry["status"] = data["kind"]
                 if data["kind"] == "answer":
@@ -222,16 +238,26 @@ class Investigation:
                         "ledger": ledger,
                         "automatic_action": "Отсутствует",
                     }
+                operation_pending = True
+                self._event("operation_request", operation=data["operation"], step=step + 1)
                 signature = digest([data["operation"], data["arguments"]])
                 require(signature not in seen, "repeated_operation")
                 seen.add(signature)
                 operation_result, requested_history = self.operation(data, pack)
+                self._event("operation_accepted", "validated", data["operation"], step + 1)
+                operation_pending = False
                 entry["operation"] = data["operation"]
                 entry["operation_arguments"] = data["arguments"]
                 if step + 1 == settings.max_steps:
                     break
                 history_limit = max(history_limit, requested_history)
                 pack, revision = self.builder.build(alert_id, history_limit)
+                self._event(
+                    "evidence_acquired",
+                    "metadata_aliases_v1",
+                    step=step + 1,
+                    evidence_ids=tuple(sorted(references(pack))),
+                )
                 # Operation results are rebuilt from the current pack so alias maps cannot drift.
                 if requested_history:
                     operation_result["result"] = pack["history"]
@@ -257,6 +283,10 @@ class Investigation:
                 if isinstance(error, InvalidInput) and str(error) in known
                 else ("analysis_failed_contents_omitted")
             )
+        if operation_pending or reason in {"forbidden_operation", "operation_scope"}:
+            if not operation_pending:
+                self._event("operation_request", "rejected")
+            self._event("operation_rejected", reason)
         result = fallback(pack, reason)
         result.update(
             ledger=ledger,
