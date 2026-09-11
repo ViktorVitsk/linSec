@@ -172,10 +172,21 @@ class Handler(BaseHTTPRequestHandler):
         self.close_connection = True
 
     def do_GET(self):
+        # Reject ambiguity before using stdlib's normalized path or email-style headers.
+        words = self.requestline.split(" ")
+        if (
+            len(words) != 3
+            or words[1] != self.path
+            or words[2] not in {"HTTP/1.0", "HTTP/1.1"}
+            or any(ord(c) < 33 or ord(c) > 126 for c in words[1])
+            or self.headers.defects
+        ):
+            self.reply(400, "application/json", b'{"error":"invalid_http_request"}')
+            return
         headers = {}
         for key in self.headers.keys():
             values = self.headers.get_all(key)
-            if len(values) != 1:
+            if len(values) != 1 or any(ord(c) < 32 or ord(c) > 126 for c in values[0]):
                 self.reply(400, "application/json", b'{"error":"duplicate_header"}')
                 return
             headers[key.lower()] = values[0]

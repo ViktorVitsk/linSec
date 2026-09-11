@@ -109,8 +109,8 @@ class ReliabilityStore:
 
     @contextmanager
     def transaction(self):
-        self.db.execute("BEGIN IMMEDIATE")
         try:
+            self.db.execute("BEGIN IMMEDIATE")
             yield
             self.db.execute("COMMIT")
             self.mark_failure(False)
@@ -145,10 +145,17 @@ class ReliabilityStore:
         at = at or now()
         with self.transaction():
             require(self.checkpoint() == previous, "checkpoint_conflict")
+            if batch.anchor_checkpoint:
+                require(batch.anchor_checkpoint == previous, "checkpoint_conflict")
+                known_anchor = self.db.execute(
+                    "SELECT 1 FROM events WHERE identity=?",
+                    (previous.identity,),
+                ).fetchone()
+                require(not known_anchor or batch.anchor is not None, "conflicting_event_identity")
             health = self.db.execute("SELECT * FROM health WHERE source=?", (SOURCE,)).fetchone()
             generation = (health["generation"] if health else 0) + 1
             inserted = 0
-            for event in batch.events:
+            for event in ((batch.anchor,) if batch.anchor else ()) + batch.events:
                 cp = event.checkpoint
                 old = self.db.execute(
                     "SELECT * FROM events WHERE identity=?", (event.identity,)
@@ -187,7 +194,13 @@ class ReliabilityStore:
                 inserted += 1
             gap = batch.state != State.CONTINUATION
             # One gap per unchanged failure episode; a resumed continuation permits a new episode.
-            if gap and (not health or health["state"] != batch.state):
+            new_gap = gap and (
+                not health
+                or health["state"] != batch.state
+                or batch.checkpoint is not None
+                and batch.checkpoint != previous
+            )
+            if new_gap:
                 value = Gap(
                     SOURCE,
                     at,
@@ -200,7 +213,7 @@ class ReliabilityStore:
                     "INSERT INTO gaps(source,detected_at,boundary_from,boundary_to,reason,recoverability,reconciliation_attempted,current_state_observed,history_recovered,unknown,generation) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
                     (*data.values(), generation),
                 )
-            needs_scan = bool(inserted or gap and (not health or health["state"] != batch.state))
+            needs_scan = bool(inserted or new_gap)
             generation = generation if needs_scan else generation - 1
             self.db.execute(
                 "INSERT INTO health(source,state,checked_at,generation) VALUES (?,?,?,?) ON CONFLICT(source) DO UPDATE SET state=excluded.state,checked_at=excluded.checked_at,generation=excluded.generation",

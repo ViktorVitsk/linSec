@@ -8,14 +8,16 @@ import time
 
 from ..investigation.contracts import require, strict_json
 from ..model import InvalidInput
-from ..reliability.contracts import Batch, Checkpoint, JournalEvent, MAX_BATCH, State, cursor_valid
+from ..reliability.contracts import (
+    Batch,
+    Checkpoint,
+    JournalEvent,
+    MAX_BATCH,
+    MESSAGE_IDS,
+    State,
+    cursor_valid,
+)
 
-MESSAGE_IDS = {
-    "39f53479d3a045ac8e11786248231fbf": "started",
-    "9d1aaa27d60140bd96365438aad20286": "stopped",
-    "be02cf6855d2428ba40df7e9d022f03d": "failed",
-    "d9b373ed55a64feb8242e02dbe79a49c": "failed",
-}
 FIELDS = "__CURSOR,__REALTIME_TIMESTAMP,_BOOT_ID,_UID,_COMM,_EXE,MESSAGE_ID,USER_UNIT"
 
 
@@ -79,6 +81,8 @@ def fetch(cursor: str | None) -> list[dict]:
                 if stderr_seen:
                     # Includes access diagnostics; never parse natural-language errors.
                     raise JournalFailure(State.DIAGNOSTIC)
+                if process.poll() not in {None, 0}:
+                    raise JournalFailure(State.UNAVAILABLE)
                 if len(rows) < MAX_BATCH + 1:
                     rc = process.wait(timeout=max(0.001, deadline - time.monotonic()))
                     if rc:
@@ -110,6 +114,23 @@ def checkpoint(row: dict) -> Checkpoint:
     return cp
 
 
+def parse_row(row: dict) -> tuple[Checkpoint, JournalEvent | None]:
+    cp = checkpoint(row)
+    require(row.get("_UID") == str(os.getuid()) and row.get("_COMM") == "systemd")
+    require(row.get("_EXE") in {"/usr/lib/systemd/systemd", "/lib/systemd/systemd"})
+    message = row.get("MESSAGE_ID")
+    require(message is None or isinstance(message, str))
+    if message not in MESSAGE_IDS:
+        return cp, None
+    unit = row.get("USER_UNIT")
+    require(isinstance(unit, str) and len(unit) <= 256)
+    if not unit.endswith((".service", ".timer")):
+        return cp, None
+    event = JournalEvent(cp, message, unit, MESSAGE_IDS[message])
+    event.validate()
+    return cp, event
+
+
 def read_batch(previous: Checkpoint | None, reader=fetch) -> Batch:
     state = State.CONTINUATION if previous else State.FIRST
     cursor = previous.cursor if previous else None
@@ -124,35 +145,31 @@ def read_batch(previous: Checkpoint | None, reader=fetch) -> Batch:
         require(isinstance(rows, list) and len(rows) <= MAX_BATCH + 1)
         if not rows:
             return Batch(State.CURSOR_LOST if cursor else State.CURSOR_UNAVAILABLE)
-        first = checkpoint(rows[0])
+        first, first_event = parse_row(rows[0])
+        anchor = None
         if cursor:
             if first != previous:
                 # A seek can land near a vacuumed cursor. Cause is not provable from CLI.
                 state = State.CURSOR_LOST
                 rows = rows[:MAX_BATCH]
             else:
+                anchor = first_event
                 rows = rows[1:]
         events = []
         last = first
+        seen = {first.cursor} if cursor and first == previous else set()
         for row in rows:
-            cp = checkpoint(row)
-            require(row.get("_UID") == str(os.getuid()) and row.get("_COMM") == "systemd")
+            cp, event = parse_row(row)
+            require(cp.cursor not in seen, "repeated_cursor_in_batch")
+            seen.add(cp.cursor)
             if cp.boot_id != last.boot_id:
                 state = State.REBOOT
             last = cp
-            message = row.get("MESSAGE_ID")
-            require(message is None or isinstance(message, str))
-            if message not in MESSAGE_IDS:
-                continue
-            require(row.get("_EXE") in {"/usr/lib/systemd/systemd", "/lib/systemd/systemd"})
-            unit = row.get("USER_UNIT")
-            require(isinstance(unit, str) and len(unit) <= 256)
-            if not unit.endswith((".service", ".timer")):
-                continue
-            event = JournalEvent(cp, message, unit, MESSAGE_IDS[message])
-            event.validate()
-            events.append(event)
-        result = Batch(state, last, tuple(events))
+            if event:
+                events.append(event)
+        result = Batch(
+            state, last, tuple(events), anchor, first if cursor and first == previous else None
+        )
         result.validate()
         return result
     except JournalFailure as error:

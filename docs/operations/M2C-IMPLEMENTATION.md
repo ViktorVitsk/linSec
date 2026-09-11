@@ -159,3 +159,9 @@ trial review; C — host/user configuration changes не требуются; D �
 Full auth/system journal, additional sensors, acknowledgements/mutations из браузера,
 cloud UI, autonomous remediation, services/autostart, account system, remote/LAN access,
 WAL migration и M3. Это не скрытые незавершённые реализации внутри текущего scope.
+
+## Последующий review
+
+2026-09-12: отдельный [pre-acceptance review/hardening](M2C-PRE-ACCEPTANCE.md)
+обнаружил и исправил defects поверх commit `afde9f8`. Исходные результаты выше —
+история implementation; актуальные validation и manual checklist находятся в новом отчёте.

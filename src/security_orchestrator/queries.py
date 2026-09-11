@@ -14,7 +14,7 @@ from .investigation.contracts import require, strict_json
 from .investigation.evidence import EvidenceReader, PackBuilder, fallback, timestamp
 from .model import InvalidInput, SOURCES, now
 from .reliability.store import APPLICATION_ID
-from .reliability.contracts import SOURCE, State
+from .reliability.contracts import MESSAGE_IDS, SOURCE, State
 
 
 def bounded_reader(directory: Path) -> EvidenceReader:
@@ -153,6 +153,8 @@ class Queries:
                 pending = Application(store, self.config, self.clock).pending_notification_count()
                 sources = []
                 for row in status["sources"]:
+                    if row["collected_at"] is not None:
+                        row["collected_at"] = timestamp(row["collected_at"])
                     require(
                         row["source"] in SOURCES
                         and row["status"] in {"ok", "partial", "unavailable"}
@@ -246,7 +248,7 @@ class Queries:
                             row["severity"],
                             row["detector_id"],
                             row["lifecycle"],
-                            row["last_seen"],
+                            timestamp(row["last_seen"]),
                             row["source"],
                             row["change_type"] + " · " + row["detector_id"],
                             bool(row["active"]),
@@ -316,8 +318,14 @@ class Queries:
                 "SELECT state,checked_at,generation,reconciled FROM health"
             ).fetchone()
             if health:
+                health = dict(health)
                 require(health["state"] in set(State))
-                timestamp(health["checked_at"])
+                health["checked_at"] = timestamp(health["checked_at"])
+                require(
+                    type(health["generation"]) is int
+                    and type(health["reconciled"]) is int
+                    and 0 <= health["reconciled"] <= health["generation"]
+                )
             cp = db.execute("SELECT version,event_at FROM checkpoint").fetchone()
             gaps = db.execute(
                 "SELECT id,detected_at,boundary_from,boundary_to,reason,reconciliation_attempted,current_state_observed,history_recovered FROM gaps ORDER BY id DESC LIMIT 50"
@@ -330,12 +338,30 @@ class Queries:
             ).fetchall()
             from datetime import datetime
 
+            if cp:
+                cp = dict(cp)
+                require(cp["version"] == 1)
+                cp["event_at"] = timestamp(cp["event_at"])
+            if rec:
+                rec = dict(rec)
+                rec["at"] = timestamp(rec["at"])
+                require(rec["outcome"] in {"ok", "partial", "unavailable", "storage_failure"})
+            events = [dict(event) for event in events]
+            gaps = [dict(gap) for gap in gaps]
+            for event in events:
+                event["event_at"] = timestamp(event["event_at"])
+                require(event["message_id"] in MESSAGE_IDS)
+                require(event["transition"] == MESSAGE_IDS[event["message_id"]])
+                require(type(event["generation"]) is int and event["generation"] > 0)
             for gap in gaps:
                 require(
                     gap["reason"] in set(State) - {State.CONTINUATION}
                     and gap["history_recovered"] == 0
                 )
-                timestamp(gap["detected_at"])
+                gap["detected_at"] = timestamp(gap["detected_at"])
+                for key in ("boundary_from", "boundary_to"):
+                    if gap[key] is not None:
+                        gap[key] = timestamp(gap[key])
                 require(
                     gap["current_state_observed"] in {0, 1}
                     and gap["reconciliation_attempted"] in {0, 1}

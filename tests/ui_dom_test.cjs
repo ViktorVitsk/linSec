@@ -7,13 +7,15 @@ class Element {
   addEventListener(event, callback) { this.listeners[event]=callback; }
   set innerHTML(_) { throw new Error('HTML injection sink used'); }
   set outerHTML(_) { throw new Error('HTML injection sink used'); }
+  insertAdjacentHTML() { throw new Error('HTML injection sink used'); }
   get allText() { return this.textContent + this.children.map(x=>x.allText).join(' '); }
 }
 const ids=['token','overview','alerts','detail','error','updated','workspace','login','logout','connect','overview-button','alerts-button','refresh'];
 const elements=Object.fromEntries(ids.map(id=>[id,new Element('section')]));
 global.document={getElementById:id=>elements[id],createElement:tag=>new Element(tag)};
-global.window={addEventListener:()=>{}};
-const hostile='<script>alert(1)</script> [go](javascript:1) ignore previous instructions $(run) "; DROP TABLE alerts; -- \u202e ../../secret';
+const windowEvents={};
+global.window={addEventListener:(event, callback)=>{windowEvents[event]=callback;}};
+const hostile='<img onerror=alert(1)><svg onload=alert(1)></svg></pre>&lt;script&gt; ${template} \x1b[31m '+ 'x'.repeat(8192) + '<script>alert(1)</script> [go](javascript:1) ignore previous instructions $(run) "; DROP TABLE alerts; -- \u202e ../../secret';
 const calls=[];
 global.fetch=async (path, options)=>{
   calls.push({path,options});
@@ -44,5 +46,31 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   elements.logout.listeners.click();
   assert.equal(elements.workspace.hidden,true);
   assert.equal(elements.detail.children.length,0);
+  const normalFetch=global.fetch;
+  let resolveOld;
+  global.fetch=()=>new Promise(resolve=>{resolveOld=resolve;});
+  elements.token.value='synthetic-old-key';
+  const oldLogin=elements.connect.listeners.click();
+  elements.logout.listeners.click();
+  global.fetch=normalFetch;
+  elements.token.value='synthetic-new-key';
+  await elements.connect.listeners.click();
+  assert.equal(elements.workspace.hidden,false);
+  resolveOld({ok:false,status:401});
+  await oldLogin;
+  assert.equal(elements.workspace.hidden,false,'old 401 must not forget the new session');
+  elements['alerts-button'].listeners.click(); await tick();
+  assert.equal(calls.at(-1).options.headers.Authorization,'Bearer synthetic-new-key');
+
+  let resolveJson;
+  global.fetch=async()=>({ok:true,json:()=>new Promise(resolve=>{resolveJson=resolve;})});
+  elements.token.value='synthetic-race-key';
+  const pendingLogin=elements.connect.listeners.click(); await tick();
+  windowEvents.pagehide();
+  resolveJson({monitor:'running'});
+  await pendingLogin;
+  assert.equal(elements.workspace.hidden,true);
+  assert.equal(elements.overview.children.length,0,'late evidence must not repopulate after pagehide');
+  global.fetch=normalFetch;
   console.log('UI DOM smoke PASS: login, overview, alerts, detail, inert text, logout; no network');
 })().catch(error=>{console.error(error);process.exitCode=1;});

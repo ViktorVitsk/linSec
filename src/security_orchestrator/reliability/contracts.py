@@ -12,6 +12,13 @@ SOURCE = "journal_user_units"
 VERSION = 1
 MAX_BATCH = 256
 
+MESSAGE_IDS = {
+    "39f53479d3a045ac8e11786248231fbf": "started",
+    "9d1aaa27d60140bd96365438aad20286": "stopped",
+    "be02cf6855d2428ba40df7e9d022f03d": "failed",
+    "d9b373ed55a64feb8242e02dbe79a49c": "failed",
+}
+
 
 class State(StrEnum):
     CONTINUATION = "continuation"
@@ -40,6 +47,10 @@ class Checkpoint:
     event_at: str
     version: int = VERSION
 
+    @property
+    def identity(self) -> str:
+        return digest([SOURCE, VERSION, self.boot_id, self.cursor])
+
     def validate(self) -> None:
         require(cursor_valid(self.cursor), "cursor_invalid")
         require(bool(re.fullmatch(r"[0-9a-f]{32}", self.boot_id)), "invalid_boot_id")
@@ -57,7 +68,7 @@ class JournalEvent:
     @property
     def identity(self) -> str:
         # Exact transport identity; time alone, unit, and message text are insufficient.
-        return digest([SOURCE, VERSION, self.checkpoint.boot_id, self.checkpoint.cursor])
+        return self.checkpoint.identity
 
     def validate(self) -> None:
         self.checkpoint.validate()
@@ -73,6 +84,8 @@ class Batch:
     state: State
     checkpoint: Checkpoint | None = None
     events: tuple[JournalEvent, ...] = ()
+    anchor: JournalEvent | None = None
+    anchor_checkpoint: Checkpoint | None = None
 
     def validate(self) -> None:
         require(isinstance(self.state, State))
@@ -82,6 +95,11 @@ class Batch:
         require(not self.events or self.checkpoint is not None)
         for event in self.events:
             event.validate()
+        if self.anchor:
+            self.anchor.validate()
+            require(self.anchor.checkpoint == self.anchor_checkpoint)
+        if self.anchor_checkpoint:
+            self.anchor_checkpoint.validate()
 
 
 @dataclass(frozen=True)

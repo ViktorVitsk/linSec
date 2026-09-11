@@ -28,7 +28,7 @@ HTTP plaintext ограничен loopback; root/компрометирован�
 локальную память/трафик. Не использовать proxy, SSH forwarding или remote browser
 для реального evidence без отдельной модели угроз.
 
-Срок — 8 часов от запуска. Refresh/reload/pagehide и «Забыть ключ» удаляют browser
+Срок — 8 часов от запуска. Reload/pagehide и «Забыть ключ» удаляют browser
 credential/evidence; это локальный logout, не server-side revocation bearer в других
 вкладках. Остановка foreground процесса отзывает текущий listener. Restart уничтожает
 его state, но повторный ввод того же ключа разрешит его снова: нужен новый ключ на
@@ -73,7 +73,7 @@ background polling. Конкретные API ответы ограничены 2
 Один последовательный HTTP handler: backpressure без unbounded threads, accept queue 4,
 socket inactivity timeout 2 s и общий connection timer 5 s. Timer закрывает только
 собственное соединение. SQLite busy timeout 1 s и progress/deadline limits, короткие
-read transactions и bounded pagination. Transport Header parser имеет стандартные
+read transactions и bounded pagination. Transport header parser имеет стандартные
 верхние пределы Python, после parse действует application cap 8 KiB; target 512 bytes.
 Повторные/неожиданные headers и методы отклоняются, сервер закрывает connection.
 
@@ -91,3 +91,23 @@ real UI JS через synthetic DOM, SQLite writer + readers. Sandbox запре
 
 Основание выбора transport и его ограничений:
 [Python HTTP server](https://docs.python.org/3.13/library/http.server.html).
+
+## Pre-acceptance hardening, 2026-09-12
+
+Raw request target сверяется с результатом stdlib parsing: normalization `//` и
+неканонические request lines не обходят routing. Header parser defects, folded/control
+values и duplicate headers отвергаются. Неизвестные методы получают fixed 501 от
+stdlib; перечисленные HEAD/OPTIONS/TRACE/CONNECT и write methods — 405. Ошибки
+storage/contract — fixed 503, отдельного endpoint с traceback/500 нет.
+
+Sidecar timestamps, message IDs/transitions, generations и reconciliation outcomes
+валидируются до projection. Поздний 401 от старой client session не отзывает новую
+сессию. Synthetic DOM проверяет также запоздалый JSON после pagehide, SVG/img/closing
+HTML, Unicode/ANSI и длинные строки. Это не замена real-browser CSP/UX acceptance.
+Повторные unauthenticated API calls не обращаются к query service. Online rate limit
+не добавлен: user-generated random token остаётся обязательным; слабый ключ уязвим
+к перебору. Секрет нельзя считать отозванным во всех вкладках после local logout;
+повторный ввод того же ключа при restart снова разрешит его. Expiry закрывает API,
+но уже отрисованные данные не стираются автоматически без запроса/pagehide/logout.
+
+[Полный отчёт и остаточные ограничения](../operations/M2C-PRE-ACCEPTANCE.md).

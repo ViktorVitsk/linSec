@@ -50,6 +50,7 @@
       credentials: "omit", cache: "no-store", redirect: "error",
       signal: AbortSignal.timeout(7000)
     });
+    if (currentSession !== session) throw new Error("Сессия закрыта; ответ отклонён.");
     if (!response.ok) {
       if (response.status === 401) forget();
       throw new Error(response.status === 401

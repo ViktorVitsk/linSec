@@ -128,3 +128,8 @@ synthetic DOM без браузера, sockets или сети. Node не явл
 [Команды и ограничения полной проверки](M2C-LOCAL-UI.md#development-validation).
 Только новый runtime opt-in; не запускать его/демонстрационный UI на trial state
 автоматически. Main watchdog DB не мигрируется для M2c.
+
+Pre-acceptance M2c: `test_m2c_hardening.py`, расширенный DOM test и offline
+package inspection; [точные результаты и ограничения](M2C-PRE-ACCEPTANCE.md).
+`scripts/summarize_m2c_journal.py` — stdin-only minimizer для ручной фазы C,
+не host probe в test suite.

@@ -1,5 +1,6 @@
 """Explicit M2c foreground runtime. Existing M2a runtime remains unchanged."""
 
+from datetime import datetime
 import sqlite3
 import time
 
@@ -38,8 +39,21 @@ def run(
                     raise
                 relevant = next((r for r in results if r.source == "systemd_user"), None)
                 outcome = relevant.status if relevant else "unavailable"
-                current_observed = bool(
+                usable = bool(
                     relevant
+                    and relevant.scope.endswith("config=" + app.config.fingerprint)
+                    and 0
+                    <= (
+                        datetime.fromisoformat(app.clock())
+                        - datetime.fromisoformat(relevant.collected_at)
+                    ).total_seconds()
+                    <= app.config.stale_seconds
+                    and relevant.reason != "invalid_input"
+                )
+                if not usable:
+                    outcome = "unavailable"
+                current_observed = bool(
+                    usable
                     and (relevant.status == "ok" or relevant.status == "partial" and relevant.items)
                 )
                 reliability.reconciled(generation, outcome, current_observed=current_observed)

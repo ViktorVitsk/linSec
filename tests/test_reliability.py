@@ -60,7 +60,11 @@ class JournalTests(unittest.TestCase):
         self.assertEqual(1, len(batch.events))
 
     def test_no_new_events(self):
-        self.assertEqual(Batch(State.CONTINUATION, cp()), read_batch(cp(), lambda _: [row()]))
+        result = read_batch(cp(), lambda _: [row()])
+        self.assertEqual(State.CONTINUATION, result.state)
+        self.assertEqual(cp(), result.checkpoint)
+        self.assertEqual((), result.events)
+        self.assertEqual(event(), result.anchor)
 
     def test_missing_cursor_first_empty_is_not_healthy(self):
         self.assertEqual(State.CURSOR_UNAVAILABLE, read_batch(None, lambda _: []).state)
@@ -407,7 +411,7 @@ class JournalBoundaryTests(unittest.TestCase):
 
 
 class JournalTransportTests(unittest.TestCase):
-    def transport(self, stdout, stderr=b"", rc=0, cursor=None):
+    def transport(self, stdout, stderr=b"", rc=0, cursor=None, poll=None):
         import json
         from types import SimpleNamespace
         from unittest.mock import MagicMock, patch
@@ -422,7 +426,7 @@ class JournalTransportTests(unittest.TestCase):
         process.stdout.fileno.return_value = 10
         process.stderr.fileno.return_value = 11
         process.wait.return_value = rc
-        process.poll.return_value = None
+        process.poll.return_value = poll
         selector = MagicMock()
         selector.__enter__.return_value = selector
 
@@ -451,7 +455,7 @@ class JournalTransportTests(unittest.TestCase):
             try:
                 return fetch(cursor), popen.call_args
             finally:
-                self.assertTrue(process.kill.called)
+                self.assertEqual(poll is None, process.kill.called)
 
     def test_fixed_argv_projection_and_no_shell(self):
         rows, call = self.transport(row(), cursor="opaque;$(not-executed)")

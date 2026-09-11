@@ -50,7 +50,9 @@ adapter входят в contract; host/config связывают sidecar с watc
 - `first_observation`: нет checkpoint; берётся одна последняя запись как anchor,
   сохраняется gap о неизвестной предыдущей истории. Backfill не обещается.
 - `continuation`: `--cursor` вернул ТОЧНО прежний checkpoint первым; эта запись
-  исключается из новой порции. Нет новых записей после anchor — нормальная continuation
+  проверяется по provenance и сохранённому hint, исключается из новых records.
+  Anchor verification передаётся в ту же transaction; иной payload/исчезнувший
+  известный hint под прежним identity отклоняется. Нет новых записей после anchor — нормальная continuation
   только видимого отфильтрованного scope.
 - `cursor_unavailable`: первый read пуст; это не «источник здоров, событий нет».
 - `cursor_invalid`: сохранённый cursor нарушает локальный transport contract;
@@ -166,3 +168,28 @@ numeric budgets. Raw request/response, approval tokens/digests и model text н�
 что расследований не было. UI не вызывает provider; описание результата AI всегда
 отделено от пересчитанного deterministic evidence. Historical timeline не является
 доказательством актуальности evidence после нового scan/retention.
+
+## Уточнения после pre-acceptance hardening, 2026-09-12
+
+[Defects, regression tests и результаты](../operations/M2C-PRE-ACCEPTANCE.md).
+Persisted schema/checkpoint v1 не менялись. Batch несёт отдельные internal
+anchor/anchor_checkpoint для проверки replay (до 256 новых hints + один anchor).
+Identity lookup использует UNIQUE index. Provenance проверяется также у anchor
+и неизвестного MESSAGE_ID; repeated cursor внутри порции — parser failure.
+Ненулевой уже известный process exit отклоняется даже на полной порции.
+При принудительном завершении reader после bounded prefix последующие diagnostics
+ещё могут быть неизвестны; сохранение prefix не доказывает complete history.
+
+Одинаковое failure state с новым anchor создаёт новый gap/generation; idle failure
+без изменения anchor объединяется. BEGIN failure также помечает storage health.
+Reconciliation stale/future/config mismatch/parser diagnostic не выставляет current
+observation; outcome unavailable, история остаётся unknown. Partial current evidence
+требует fresh/current-config положительных records. Flag на gap означает, что после
+него **была** такая сверка, не бесконечную актуальность: смотреть timestamp/freshness.
+
+Wallclock timestamps не задают cursor ordering: часы могут измениться. Old/future
+journal timestamp сохраняется как event time и не доказывает актуальность inventory.
+Opaque cursors нельзя сортировать; произвольную перестановку distinct записей без
+повторённого cursor нельзя доказать этим adapter. Exact replay сохраняется однократно,
+разные cursor/time-equivalent hints не объединяются. Не сохраняемые сообщения вне
+выбранного scope не получают full payload integrity history; это граница минимизации.
