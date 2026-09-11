@@ -244,23 +244,34 @@ class Application:
         status = self.status()
         sources = status["sources"]
         if status["last_storage_write_failed"] or any(
-            r["status"] != "ok" or r["stale"] or r["config_changed"] for r in sources
+            r["status"] not in {"ok", "partial"} or r["stale"] or r["config_changed"]
+            for r in sources
         ):
-            raise InvalidInput("baseline_requires_fresh_complete_scan_with_current_config")
+            raise InvalidInput("baseline_requires_fresh_available_scan_with_current_config")
         proposed = []
         for row in sources:
+            before = self.snapshot(row["baseline_id"])
+            observed = self.snapshot(row["snapshot_id"])
+            retained = []
+            if row["status"] == "partial":
+                validate_items(before | observed)
+                retained = sorted(before.keys() - observed.keys())
             proposed.append(
                 {
                     "source": row["source"],
                     "snapshot_id": row["snapshot_id"],
                     "baseline_id": row["baseline_id"],
                     "scope": row["scope"],
+                    "completeness": row["status"],
                     "warning": row["reason"],
                     "collected_at": row["collected_at"],
+                    "last_ok": row["last_ok"],
+                    "baseline_scope_changed": row["baseline_scope_changed"],
+                    "retained_baseline_keys": retained,
                     "changes": changes(
-                        self.snapshot(row["baseline_id"]),
-                        self.snapshot(row["snapshot_id"]),
-                        complete=True,
+                        before,
+                        observed,
+                        complete=row["status"] == "ok",
                     ),
                 }
             )
@@ -276,6 +287,7 @@ class Application:
             "baseline_revision": status["baseline_revision"],
             "proposed": proposed,
             "meaning": "Baseline = known/acknowledged state, не clean state. Даже первый baseline может описывать уже скомпрометированную машину.",
+            "partial_meaning": "Partial baseline сохраняет последние известные объекты, включая ранее наблюдавшиеся: их наличие сейчас не подтверждено. Пробелы покрытия остаются degraded; отсутствие объекта не доказывает удаление.",
         }
 
     def baseline_preview(self) -> dict:
@@ -289,9 +301,39 @@ class Application:
             if token != preview["approval_token"]:
                 raise InvalidInput("stale_approval_get_new_baseline_diff")
             for item in preview["proposed"]:
+                snapshot_id = item["snapshot_id"]
+                if item["completeness"] == "partial":
+                    observed = self.snapshot(snapshot_id)
+                    # An intervening complete scan may have dropped baseline objects from
+                    # the latest inventory. Partial approval must preserve them as unknown.
+                    accepted = self.snapshot(item["baseline_id"]) | observed
+                    validate_items(accepted)
+                    if accepted != observed:
+                        cursor = self.db.execute(
+                            """INSERT INTO snapshots(host_id,source,schema_version,collector_version,
+                            created_at,scope,completeness,fingerprint,data)
+                            SELECT host_id,source,schema_version,collector_version,
+                            created_at,scope,completeness,?,? FROM snapshots WHERE id=?""",
+                            (
+                                digest([accepted, item["scope"], "partial"]),
+                                encode(accepted),
+                                snapshot_id,
+                            ),
+                        )
+                        snapshot_id = cursor.lastrowid
+                item["accepted_snapshot_id"] = snapshot_id
                 self.db.execute(
-                    "INSERT INTO baseline VALUES (?,?) ON CONFLICT(source) DO UPDATE SET snapshot_id=excluded.snapshot_id",
-                    (item["source"], item["snapshot_id"]),
+                    """INSERT INTO baseline(source,snapshot_id,collected_at,last_ok,reason)
+                    VALUES (?,?,?,?,?) ON CONFLICT(source) DO UPDATE SET
+                    snapshot_id=excluded.snapshot_id,collected_at=excluded.collected_at,
+                    last_ok=excluded.last_ok,reason=excluded.reason""",
+                    (
+                        item["source"],
+                        snapshot_id,
+                        item["collected_at"],
+                        item["last_ok"],
+                        item["warning"],
+                    ),
                 )
             revision = preview["baseline_revision"] + 1
             self.db.execute(
@@ -304,7 +346,12 @@ class Application:
                     "revision": revision,
                     "preview": token,
                     "reason": reason,
-                    "snapshots": {p["source"]: p["snapshot_id"] for p in preview["proposed"]},
+                    "snapshots": {
+                        p["source"]: p["accepted_snapshot_id"] for p in preview["proposed"]
+                    },
+                    "coverage": [
+                        {k: v for k, v in p.items() if k != "changes"} for p in preview["proposed"]
+                    ],
                 },
             )
             return {"baseline_revision": revision}
@@ -312,7 +359,11 @@ class Application:
     def baseline_show(self) -> list[dict]:
         return [
             {**row, "items": self.snapshot(row["snapshot_id"])}
-            for row in self.store.rows("SELECT * FROM baseline ORDER BY source")
+            for row in self.store.rows(
+                """SELECT baseline.*,snapshots.scope,snapshots.completeness
+                FROM baseline JOIN snapshots ON snapshots.id=baseline.snapshot_id
+                ORDER BY baseline.source"""
+            )
         ]
 
     def alerts(self, limit: int = 100) -> list[dict]:

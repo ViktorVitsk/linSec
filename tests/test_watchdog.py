@@ -135,6 +135,189 @@ class WatchdogTests(unittest.TestCase):
             "changed", next(a for a in self.app.alerts() if a["active"])["change_type"]
         )
 
+    def test_initial_partial_baseline_preserves_coverage_after_restart(self):
+        batch = self.batch({"systemd_system": {"file": file_item()}}, {"systemd_system": "partial"})
+        batch = [
+            replace(r, reason="access_or_io") if r.source == "systemd_system" else r for r in batch
+        ]
+        self.app.ingest(batch)
+        preview = self.app.baseline_preview()
+        proposed = next(p for p in preview["proposed"] if p["source"] == "systemd_system")
+        self.assertEqual("partial", proposed["completeness"])
+        self.assertEqual("access_or_io", proposed["warning"])
+        self.assertIsNone(proposed["last_ok"])
+        self.assertEqual(["added"], [c["change"] for c in proposed["changes"]])
+        self.app.baseline_update(preview["approval_token"], "Reviewed partial coverage")
+        self.store.close()
+        self.store = Store(self.path)
+        self.app = Application(self.store, self.config, lambda: self.instant.isoformat())
+        baseline = next(b for b in self.app.baseline_show() if b["source"] == "systemd_system")
+        self.assertEqual("partial", baseline["completeness"])
+        self.assertEqual("access_or_io", baseline["reason"])
+        self.assertEqual(proposed["collected_at"], baseline["collected_at"])
+        self.assertIsNone(baseline["last_ok"])
+        self.assertEqual({"file": file_item()}, baseline["items"])
+        audit = next(a for a in self.app.history()["audit"] if a["action"] == "baseline_update")
+        coverage = next(
+            p for p in json.loads(audit["detail"])["coverage"] if p["source"] == "systemd_system"
+        )
+        self.assertEqual("partial", coverage["completeness"])
+        self.assertEqual("access_or_io", coverage["warning"])
+        self.assertEqual("degraded", self.app.status()["health"])
+        self.instant += timedelta(days=91)
+        self.scan()
+        self.assertEqual(
+            baseline,
+            next(b for b in self.app.baseline_show() if b["source"] == "systemd_system"),
+        )
+
+    def test_partial_baseline_update_preserves_unseen_objects_and_detects_new_evidence(self):
+        self.baseline({"systemd_system": {"old": file_item(), "changed": file_item()}})
+        self.scan(
+            {"systemd_system": {"changed": file_item("b"), "new": file_item("c")}},
+            {"systemd_system": "partial"},
+        )
+        preview = self.app.baseline_preview()
+        proposed = next(p for p in preview["proposed"] if p["source"] == "systemd_system")
+        self.assertEqual(
+            {("changed", "changed"), ("new", "added")},
+            {(c["key"], c["change"]) for c in proposed["changes"]},
+        )
+        self.assertEqual(
+            {("changed", "changed"), ("new", "added")},
+            {(a["object_key"], a["change_type"]) for a in self.app.alerts() if a["active"]},
+        )
+        self.app.baseline_update(preview["approval_token"], "Reviewed positive evidence and gaps")
+        baseline = next(b for b in self.app.baseline_show() if b["source"] == "systemd_system")
+        self.assertEqual({"old", "changed", "new"}, set(baseline["items"]))
+        self.scan(statuses={"systemd_system": "partial"})
+        self.assertFalse(any(a["change_type"] == "removed" for a in self.app.alerts()))
+        self.scan({"systemd_system": {"later": file_item("d")}}, {"systemd_system": "partial"})
+        self.assertEqual(
+            [("later", "added")],
+            [(a["object_key"], a["change_type"]) for a in self.app.alerts() if a["active"]],
+        )
+
+    def test_partial_baseline_retains_objects_missing_from_latest_snapshot(self):
+        self.baseline({"systemd_system": {"old": file_item()}})
+        # Complete absence was never approved; a later partial cannot approve a removal.
+        self.scan()
+        self.scan({"systemd_system": {"new": file_item("b")}}, {"systemd_system": "partial"})
+        preview = self.app.baseline_preview()
+        proposed = next(p for p in preview["proposed"] if p["source"] == "systemd_system")
+        self.assertEqual(["old"], proposed["retained_baseline_keys"])
+        self.assertEqual(["added"], [c["change"] for c in proposed["changes"]])
+        self.app.baseline_update(preview["approval_token"], "Retain unknown old object")
+        baseline = next(b for b in self.app.baseline_show() if b["source"] == "systemd_system")
+        self.assertEqual({"old", "new"}, set(baseline["items"]))
+        self.assertEqual("partial", baseline["completeness"])
+        self.assertNotEqual(proposed["snapshot_id"], baseline["snapshot_id"])
+        self.assertEqual({"new"}, set(self.app.snapshot(proposed["snapshot_id"])))
+        self.scan({"systemd_system": {"old": file_item(), "new": file_item("b")}})
+        self.assertFalse(any(a["active"] for a in self.app.alerts()))
+
+    def test_partial_to_complete_requires_new_approval_and_allows_proven_removals(self):
+        self.scan({"systemd_system": {"old": file_item()}}, {"systemd_system": "partial"})
+        preview = self.app.baseline_preview()
+        self.app.baseline_update(preview["approval_token"], "Reviewed partial inventory")
+        token = self.app.baseline_preview()["approval_token"]
+        self.scan({"systemd_system": {"new": file_item("b")}})
+        with self.assertRaises(InvalidInput):
+            self.app.baseline_update(token, "Old partial approval")
+        self.assertEqual(
+            {("old", "removed"), ("new", "added")},
+            {(a["object_key"], a["change_type"]) for a in self.app.alerts() if a["active"]},
+        )
+        preview = self.app.baseline_preview()
+        proposed = next(p for p in preview["proposed"] if p["source"] == "systemd_system")
+        self.assertEqual("ok", proposed["completeness"])
+        self.assertEqual({"added", "removed"}, {c["change"] for c in proposed["changes"]})
+        self.app.baseline_update(preview["approval_token"], "Reviewed complete inventory")
+        baseline = next(b for b in self.app.baseline_show() if b["source"] == "systemd_system")
+        self.assertEqual("ok", baseline["completeness"])
+        self.assertEqual({"new"}, set(baseline["items"]))
+        self.assertEqual("current", self.app.status()["health"])
+        self.scan({"systemd_system": {"new": file_item("b")}})
+        self.assertFalse(any(a["active"] for a in self.app.alerts()))
+
+    def test_partial_to_complete_same_items_changes_provenance_and_token(self):
+        self.scan(statuses={"systemd_system": "partial"})
+        partial = self.app.baseline_preview()
+        self.app.baseline_update(partial["approval_token"], "Reviewed empty partial inventory")
+        token = self.app.baseline_preview()["approval_token"]
+        self.scan()
+        with self.assertRaises(InvalidInput):
+            self.app.baseline_update(token, "Stale coverage approval")
+        complete = self.app.baseline_preview()
+        self.assertTrue(all(not p["changes"] for p in complete["proposed"]))
+        self.app.baseline_update(complete["approval_token"], "Reviewed complete coverage")
+        self.assertTrue(all(b["completeness"] == "ok" for b in self.app.baseline_show()))
+
+    def test_partial_baseline_still_blocks_unavailable_stale_storage_and_config_failure(self):
+        for failure in ("unavailable", "stale", "storage", "config"):
+            with self.subTest(failure=failure):
+                self.app.config = self.config
+                self.scan(statuses={"systemd_system": "partial"})
+                token = self.app.baseline_preview()["approval_token"]
+                if failure == "unavailable":
+                    self.scan(statuses={"systemd_system": "unavailable"})
+                elif failure == "stale":
+                    self.instant += timedelta(seconds=self.config.stale_seconds + 1)
+                elif failure == "storage":
+                    self.store.mark_storage_error(True)
+                else:
+                    self.app.config = replace(self.config, persistence=("crontab",))
+                with self.assertRaises(InvalidInput):
+                    self.app.baseline_preview()
+                with self.assertRaises(InvalidInput):
+                    self.app.baseline_update(token, "Rejected approval")
+                self.assertEqual([], self.app.baseline_show())
+
+    def test_baseline_v1_migration_keeps_evidence_and_unknown_acceptance_metadata(self):
+        self.baseline({"systemd_system": {"file": file_item()}})
+        original = self.app.baseline_show()
+        for column in ("collected_at", "last_ok", "reason"):
+            self.store.db.execute(f"ALTER TABLE baseline DROP COLUMN {column}")
+        self.store.db.execute("PRAGMA user_version=1")
+        self.store.close()
+        self.store = Store(self.path)
+        self.app = Application(self.store, self.config, lambda: self.instant.isoformat())
+        migrated = self.app.baseline_show()
+        self.assertEqual([b["snapshot_id"] for b in original], [b["snapshot_id"] for b in migrated])
+        self.assertTrue(all(b["reason"] is None and b["collected_at"] is None for b in migrated))
+        self.assertEqual(original[0]["items"], migrated[0]["items"])
+        self.assertEqual(2, self.store.db.execute("PRAGMA user_version").fetchone()[0])
+        self.assertEqual([], self.store.db.execute("PRAGMA foreign_key_check").fetchall())
+
+    def test_partial_baseline_union_limit_is_checked_before_approval(self):
+        self.baseline({"systemd_system": {"old": file_item()}})
+        self.scan()
+        self.scan({"systemd_system": {"new": file_item("b")}}, {"systemd_system": "partial"})
+        original = self.app.baseline_show()
+        with patch("security_orchestrator.model.MAX_ITEMS", 1):
+            with self.assertRaises(InvalidInput):
+                self.app.baseline_preview()
+        self.assertEqual(original, self.app.baseline_show())
+
+    def test_partial_baseline_storage_failure_rolls_back_union_and_provenance(self):
+        self.baseline({"systemd_system": {"old": file_item()}})
+        self.scan()
+        self.scan({"systemd_system": {"new": file_item("b")}}, {"systemd_system": "partial"})
+        original = self.app.baseline_show()
+        history = self.app.history()
+        preview = self.app.baseline_preview()
+        with patch.object(
+            self.app, "audit", side_effect=sqlite3.OperationalError("synthetic failure")
+        ):
+            with self.assertRaises(sqlite3.OperationalError):
+                self.app.baseline_update(preview["approval_token"], "Synthetic write failure")
+        self.assertEqual(original, self.app.baseline_show())
+        self.assertEqual(history, self.app.history())
+        self.assertEqual(preview["baseline_revision"], self.app.status()["baseline_revision"])
+        self.assertTrue(self.app.status()["last_storage_write_failed"])
+        with self.assertRaises(InvalidInput):
+            self.app.baseline_preview()
+
     def test_stale_baseline_approval_rejected_on_change_failure_and_age(self):
         self.scan()
         token = self.app.baseline_preview()["approval_token"]

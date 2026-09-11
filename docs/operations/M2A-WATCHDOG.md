@@ -62,8 +62,27 @@ sec baseline update --approve TOKEN_FROM_DIFF --reason "Причина прин�
 ```
 
 TOKEN_FROM_DIFF — placeholder, не исполняемая готовая команда. Любой новый scan,
-изменение config/baseline или истечение freshness требует нового diff. Неполный
-inventory принимать нельзя. Отсутствие process owners при полном bind inventory
+изменение config/baseline или истечение freshness требует нового diff. Актуальный
+`partial` с текущей конфигурацией можно принять после осознанного review пробелов.
+`baseline diff` показывает `completeness`, `warning`, `last_ok`, scope и время сбора;
+`retained_baseline_keys` перечисляет прежние baseline-объекты, отсутствующие даже
+в последнем сохранённом inventory и дополнительно сохраняемые при принятии.
+Partial snapshot также может содержать ранее наблюдавшиеся объекты: это последние
+известные данные, не подтверждение их текущего наличия. При partial новые/изменённые
+объекты остаются видимыми в diff и alerts, а отсутствие не создаёт removals и не
+стирает прежние baseline-объекты. Последующий полный scan в том же scope снова
+может подтвердить удаление; обновить baseline нужно отдельным review.
+
+`baseline show` сохраняет полноту, scope, причину и времена принятого покрытия,
+даже после новых scans; аудит update содержит coverage и ссылки на исходный и
+принятый snapshots. Принятие partial не превращает `status` в `current`.
+Например, ограничение чтения systemd unit или dangling symlink не требует root
+или изменения host permissions ради baseline. `unavailable`, stale, ошибка
+хранилища и несовпадение текущей конфигурации по-прежнему блокируют diff/update.
+SQLite v1 автоматически мигрирует в v2 транзакционно; неизвестные времена/причина
+принятия старого baseline остаются `null`, evidence сохраняется.
+
+Отсутствие process owners при полном bind inventory
 показано как отдельное предупреждение; оно не превращается в разрешённое port trust.
 Принятие baseline не закрывает старые alerts и не доказывает отсутствие компрометации.
 
@@ -149,6 +168,13 @@ hygiene, Ruff, offline lock check и `git diff --check` — PASS. Wheel собр
 SQLite, кэшей и credentials. Input/minimization fixes и отложенные решения описаны
 в [trust boundaries](../architecture/trust-boundaries.md). Это локальные проверки,
 не результат удалённого CI и не завершение семидневного trial.
+
+После исправления partial baseline 2026-09-11: **68 tests — PASS**, repository
+hygiene, Ruff, offline lock check и `git diff --check` — PASS. Добавлены 9 regression
+tests: начальный partial, сохранение невидимых объектов, положительные изменения,
+partial → complete, блокирующие состояния, миграция v1 → v2, provenance после
+restart/retention, лимит union и rollback при ошибке записи. Real-host acceptance
+этого исправления ещё не выполнялась; host permissions и privileges не менялись.
 
 [Publication redaction: private workstation observation/configuration omitted.]
 

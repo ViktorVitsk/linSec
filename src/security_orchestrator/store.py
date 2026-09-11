@@ -40,6 +40,12 @@ MIGRATION_1 = (
         id INTEGER PRIMARY KEY, at TEXT NOT NULL, action TEXT NOT NULL, detail TEXT NOT NULL)""",
 )
 
+MIGRATION_2 = (
+    "ALTER TABLE baseline ADD COLUMN collected_at TEXT",
+    "ALTER TABLE baseline ADD COLUMN last_ok TEXT",
+    "ALTER TABLE baseline ADD COLUMN reason TEXT",
+)
+
 
 def private_directory(path: Path) -> Path:
     # Refuse symlink components and permissive existing runtime directories instead of chmod.
@@ -101,7 +107,7 @@ class Store:
             self.db.execute(f"PRAGMA max_page_count={int(max_pages)}")
             with self.transaction():
                 version = self.db.execute("PRAGMA user_version").fetchone()[0]
-                if version not in {0, 1}:
+                if version not in {0, 1, 2}:
                     raise InvalidInput("unsupported_database_version")
                 if version == 0:
                     for statement in MIGRATION_1:
@@ -111,6 +117,11 @@ class Store:
                     )
                     self.db.execute("INSERT INTO metadata VALUES ('baseline_revision', '0')")
                     self.db.execute("PRAGMA user_version=1")
+                if version < 2:
+                    for statement in MIGRATION_2:
+                        self.db.execute(statement)
+                    # Legacy acceptance metadata is unknown, not reconstructed from current sources.
+                    self.db.execute("PRAGMA user_version=2")
         except BaseException:
             self.db.close()
             raise

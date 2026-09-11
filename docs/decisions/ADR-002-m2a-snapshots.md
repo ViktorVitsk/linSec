@@ -39,8 +39,9 @@ Alert хранит object key и ссылки на before/after snapshots, не 
 
 При partial положительные изменения видимых объектов детектируются, пропавшие
 объекты не объявляются удалёнными; последний доступный inventory сохраняется.
-Unavailable не заменяет evidence пустым снимком. Baseline можно принять только
-после полного актуального inventory всех восьми источников. `context_missing`
+Unavailable не заменяет evidence пустым снимком. Уточнение 2026-09-11: baseline
+можно принять после актуального `ok`/`partial` inventory всех восьми источников
+с текущей конфигурацией и явным review ограничений. `context_missing`
 у сети отдельно предупреждает об отсутствии владельцев: доступность всех bind
 записей не равна полноте process context. Такой baseline требует review, а
 trust/suppression endpoint без подтверждённого executable/user запрещены.
@@ -48,7 +49,7 @@ trust/suppression endpoint без подтверждённого executable/user
 Preview token привязан к host/config, версии baseline, конкретным snapshots,
 полноте, scope и временам последнего сбора. Обновление пересчитывает token под
 `BEGIN IMMEDIATE`; любой новый scan требует нового preview. Повторное использование,
-stale data, изменённый config, partial/unavailable и ошибка записи отклоняются.
+stale data, изменённый config, unavailable и ошибка записи отклоняются.
 Это compare-and-swap на локальных наблюдениях, не атомарный snapshot всего хоста:
 изменение ОС после последнего scan может быть найдено только следующим scan.
 
@@ -60,7 +61,7 @@ suppression — временное/осознанное подавление у�
 Изменение контекста создаёт новый alert; исчезновение и возвращение прежнего
 контекста переоткрывает сгруппированный alert. PID churn не является новым контекстом.
 
-SQLite schema v1 мигрируется транзакционно через `user_version`; неизвестная версия
+SQLite schema v2 мигрируется транзакционно через `user_version`; неизвестная версия
 отклоняется. Foreign keys сохраняют evidence links. DELETE journal + FULL synchronous;
 половина storage budget резервируется для rollback journal, ещё 1 MiB — запас.
 Ошибки записи откатывают весь scan. Приватный предварительно выделенный health byte
@@ -70,6 +71,23 @@ write невозможен. Никаких бесконечных retries, уд�
 90 дней; активные alerts, baseline и их evidence закреплены до дальнейшего review.
 
 ## Альтернативы
+
+Уточнение partial baseline (2026-09-11): запрет любого partial не позволяет начать
+unprivileged trial при устойчивых access gaps. Повышение прав ради полного inventory
+не принято. Простое снятие запрета с заменой baseline последним snapshot тоже
+не подходит: полный промежуточный scan мог убрать старый объект, а последующий
+partial уже не доказывает его удаление. Поэтому partial update сохраняет union
+прежнего baseline и последнего известного inventory, с приоритетом новых значений.
+Если union отличается от исходного snapshot, создаётся отдельный immutable partial
+snapshot; наблюдения источника не переписываются. Preview проверяет лимиты union
+и показывает дополнительно сохранённые ключи. Removals при partial запрещены.
+
+Полнота остаётся в snapshot, причина и времена принятого покрытия — в baseline
+(миграция v1 → v2), а исходный/принятый snapshot, scope, полнота и причина — в audit.
+Метаданные старого принятия неизвестны и остаются null. Это provenance на уровне
+источника, не свежесть каждого объекта: partial inventory может содержать ранее
+наблюдавшиеся записи. Полный следующий scan заменяет inventory и разрешает removals
+в том же scope. Принятие baseline не устраняет gaps и не переводит partial в PASS.
 
 SQLite WAL полезен при большом числе читателей, но усложняет контроль sidecars и
 checkpoint budget для первого foreground процесса. In-memory-only pipeline теряет
