@@ -60,4 +60,26 @@ These limitations are intentionally not resolved by elevating watchdog privilege
 
 ## Final assessment
 
-Pending.
+Actual trial observation start: 2026-09-11T17:11:21.752213+03:00
+Planned trial end: 2026-09-18T17:11:21.752213+03:00
+
+Initial runtime checkpoint:
+
+- monitor PID=[withheld]
+- monitor mode: `sec monitor --iterations 0`
+- monitor instances observed: 1
+- cycle interval observed: approximately 5 minutes
+- active/pending notifications at start: 0
+- second monitor cycle: pending_notifications=0
+- health: degraded
+- expected degraded source: `systemd_system=partial`, reason=`access_or_io`
+- TCP/UDP sources: collection successful; some process context remains unavailable (`context_missing`) as expected
+- baseline revision: 1
+- baseline scope changed: false
+- collector configuration changed: false
+- storage: 708608 bytes (692 KiB)
+- storage budget: 536870912 bytes (512 MiB)
+- last storage write failed: false
+- LLM enabled: false
+- orchestrator disabled: false
+- `sec status` exit code: 2, expected because of known degraded/partial coverage
