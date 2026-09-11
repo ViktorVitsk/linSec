@@ -2,7 +2,7 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
-Дата: 2026-09-10. Статус: **актуальный согласованный порядок разработки**.
+Дата обновления: 2026-09-11. Статус: **актуальный согласованный порядок разработки**.
 Заменяет прежнюю последовательность M2 → M3 → M4 AI → M5 UX из исходного AGENTS.
 Цель — личный рабочий инструмент и обучение через реальные события. Компаниям,
 multi-tenant и SaaS сейчас не посвящаем отдельную архитектуру.
@@ -19,8 +19,14 @@ multi-tenant и SaaS сейчас не посвящаем отдельную а�
   Есть `sec`, collectors, SQLite migrations, baseline/diff, alerts/explain, исключения,
   retention, doctor и kill switch. Synthetic replay проходит; один foreground scan
   в sandbox показал unavailable сеть и partial systemd. Это не проверка полного
-  покрытия workstation. User service не установлен, семидневный trial (Operational trial: [M2A_TRIAL](operations/M2A_TRIAL.md)) не выполнен.
-- M2b/M2c/M3: **ещё не реализованы**. AI integration и локальной UI нет.
+  покрытия workstation. По сообщению владельца 2026-09-11 M2a переходит в отдельный
+  семидневный real-host trial ([M2A_TRIAL](operations/M2A_TRIAL.md)); его результаты ещё открыты.
+- M2b: **код и synthetic acceptance реализованы**: отдельный read-only export/policy
+  layer, providers, privacy preview, typed operations, budgets и deterministic fallback.
+  [Запуск и границы](operations/M2B-INVESTIGATION.md). Реальные provider/model acceptance,
+  local runtime/GPU сравнительные измерения и оценка русского объяснения человеком открыты.
+  AI выключен по умолчанию; во время разработки cloud/host inference не выполнялись.
+- M2c/M3: **не начаты**. UI и расширение sensors отсутствуют.
 
 Уточнение 2026-09-11 перед M2b: [границы доверия](architecture/trust-boundaries.md).
 Исправлены C1/DEL terminal escaping, проверка сохранённого evidence и лимит partial
@@ -28,9 +34,11 @@ union; hostile-input/minimization scenarios добавлены в acceptance tes
 явно acknowledged, не clean state. Same-UID tampering принят как residual risk;
 LLM export/action boundary относится к M2b, Docker/worker isolation — к M3/отдельным изменениям.
 
-Текущая поставка — код M2a и синтетическая демонстрация. Ближайший шаг: проверить
-host coverage в обычном пользовательском окружении, просмотреть baseline и провести
-семь дней эксплуатации. [Процедура и ограничения](operations/M2A-WATCHDOG.md).
+Текущая поставка — M2a и отдельный M2b с synthetic acceptance. Владелец проходит
+host coverage/baseline review и trial M2a отдельно; AI-результаты не смешиваются с его
+метриками. [Совместимость без изменения M2a contracts](decisions/ADR-003-m2b-investigation-boundary.md).
+Следующий шаг M2b — сравнительный local benchmark и human review после отдельного
+выбора/проверки runtime. [Процедура trial M2a](operations/M2A-WATCHDOG.md).
 Системные операции не разрешаются автоматически принятием roadmap.
 
 ## M2a — Первый ежедневный watchdog

@@ -6,14 +6,18 @@
 и учиться безопасности на реальных событиях. **Безопасность → надёжность → понятность
 → простота → автоматизация → функции.**
 
-## Состояние на 2026-09-10
+## Состояние на 2026-09-11
 
 **M0/M1 завершены в согласованном scope. Реализован foreground runtime M2a:**
 устанавливаемый `sec`, Linux collectors, SQLite, baseline/diff, история, предупреждения
 с русскими объяснениями, узкие исключения, freshness/doctor и kill switch.
 Проверены synthetic replay и обработка ограничений sandbox. Полнота сбора на хосте
 и семидневная эксплуатационная приёмка ещё не подтверждены. M2a не объявлен закрытым.
-Systemd service не устанавливался; AI integration отсутствует.
+Владелец проводит семидневный real-host operational trial отдельно.
+Добавлен M2b: read-only evidence packs, privacy preview, bounded typed investigation,
+OpenRouter/Ollama adapters и synthetic benchmark. AI выключен по умолчанию;
+реальные provider calls, сравнительные измерения моделей и human acceptance ещё открыты.
+M2a sensors/config/storage contracts сохраняются; M2c/M3 не начаты.
 
 - [Roadmap: M2a watchdog → M2b AI → M2c надёжность/UI → M3 Docker](docs/ROADMAP.md).
 - [Архитектура, ежедневный цикл и данные](docs/architecture/overview.md).
@@ -21,6 +25,7 @@ Systemd service не устанавливался; AI integration отсутст
 - [Разработка, проверки и границы CI](docs/operations/development.md).
 - [Правила безопасности](docs/operations/safety-rules.md).
 - [Запуск M2a, CLI и приёмка](docs/operations/M2A-WATCHDOG.md).
+- [M2b: privacy preview, расследование и local benchmark](docs/operations/M2B-INVESTIGATION.md).
 - [Детекторы и ручная проверка](docs/detections/M2A-WATCHDOG.md).
 - [Trust boundaries: watchdog, hostile evidence и coding agent](docs/architecture/trust-boundaries.md).
 

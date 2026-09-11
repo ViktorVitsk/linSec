@@ -69,6 +69,12 @@ host collectors: bounded subprocess проверяется фиксирован�
 synthetic data. Hostile strings проверяются через DB/diff/explain/CLI, включая C1,
 ANSI/OSC, bidi, размеры/encoding и minimization. Test data не содержит реальных secrets.
 
+M2b: `test_investigation.py` использует disposable M2a databases, scripted providers и
+mock HTTP/process boundaries. Проверяет exact privacy approval, новые history evidence,
+read-only DB, схемы/IDs/operations, caps/deadlines, static fallback и неизменность M2a.
+`sec ai-benchmark` без `--run` — только synthetic fixture replay, без сети/host collectors.
+Реальное inference не входит в unittest/CI; [отдельная приёмка](M2B-INVESTIGATION.md).
+
 ## Граница coding agent
 
 Coding agent, его зависимости и исполняемый build/test code считаются потенциально

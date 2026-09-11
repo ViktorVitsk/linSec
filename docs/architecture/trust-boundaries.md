@@ -5,6 +5,12 @@
 Дата: 2026-09-11. Решения после review перед M2b. Host coverage и семидневная
 эксплуатационная приёмка M2a остаются открытыми. Это не подтверждение hardening.
 
+Дополнение 2026-09-11 после разрешения владельца начать M2b параллельно отдельному trial:
+описанная ниже будущая export/action boundary реализована в `investigation/` и synthetic
+acceptance tests. [Точные меры и ограничения](../operations/M2B-INVESTIGATION.md).
+Runtime/collector/storage contracts M2a не изменены; same-UID residual risks сохраняются.
+Исходные формулировки ниже описывают состояние и решения review **перед** M2b.
+
 ## Watchdog: detection без обещания tamper resistance
 
 M2a показывает drift доступных источников, gaps и историю, пока его процесс,

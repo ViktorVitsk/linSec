@@ -38,7 +38,7 @@ class SafeArgumentParser(argparse.ArgumentParser):
 
 
 def parser() -> argparse.ArgumentParser:
-    root = SafeArgumentParser(prog="sec", description="Локальный watchdog без AI и remediation")
+    root = SafeArgumentParser(prog="sec", description="Локальный watchdog; AI отдельно, без remediation")
     root.add_argument(
         "--state", type=Path, default=Path("runtime/watchdog"), help="Приватный каталог состояния"
     )
@@ -49,6 +49,14 @@ def parser() -> argparse.ArgumentParser:
     for name in ("alerts", "history"):
         commands.add_parser(name).add_argument("--limit", type=int, default=100)
     commands.add_parser("explain").add_argument("id", type=int)
+    investigation = commands.add_parser("investigate", help="M2b: read-only evidence и optional AI")
+    investigation.add_argument("id", type=int)
+    investigation.add_argument("--ai-config", type=Path)
+    investigation.add_argument("--run", action="store_true", help="Явный запуск с review каждого запроса")
+    investigation.add_argument("--approve", help="Токен только первого точного preview")
+    benchmark = commands.add_parser("ai-benchmark", help="M2b: отдельные synthetic scenarios")
+    benchmark.add_argument("--ai-config", type=Path)
+    benchmark.add_argument("--run", action="store_true", help="Запустить явно настроенный local runtime")
     monitor = commands.add_parser("monitor")
     monitor.add_argument("--iterations", type=int, default=0, help="0: до Ctrl-C или sec disable")
     lifecycle = commands.add_parser("alert")
@@ -90,6 +98,10 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if sys.platform != "linux":
             raise InvalidInput("CLI_requires_Linux_core_is_portable")
+        if args.command in {"investigate", "ai-benchmark"}:
+            from .investigation.cli import dispatch
+
+            return dispatch(args, config, emit)
         from . import runtime
 
         if args.command in {"disable", "enable"}:

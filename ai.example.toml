@@ -1,0 +1,27 @@
+# M2b only. Не передавать как sec --config и не хранить здесь credentials.
+schema_version = 1
+llm_enabled = false
+openrouter_enabled = false
+provider = "disabled"
+model = ""
+allowed_providers = []
+local_runtime_verified = false
+
+# Один explaining call; для bounded investigation выбрать максимум 5.
+max_steps = 1
+timeout_seconds = 30
+total_seconds = 120
+max_input_tokens = 24000
+max_output_tokens = 1024
+total_tokens = 32000
+
+# Integer micro-USD: 1 USD = 1_000_000. Cloud требует положительные значения.
+budget_microusd = 0
+input_price_microusd_per_million = 0
+output_price_microusd_per_million = 0
+
+# Local: provider="ollama", точный установленный model:tag, llm_enabled=true.
+# local_runtime_verified=true только после проверки local-only server/runtime/model.
+# Cloud: provider="openrouter", точный model slug, allowed_providers=["ExactProvider"],
+# llm_enabled=true, openrouter_enabled=true, явные budget/price caps.
+# Это не рекомендация модели/цен. Прежде прочитайте docs/operations/M2B-INVESTIGATION.md.

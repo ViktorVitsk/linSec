@@ -2,7 +2,9 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
-Дата решения: 2026-09-10. Статус: **принято для реализации; runtime ещё отсутствует**.
+Дата решения: 2026-09-10, обновление 2026-09-11.
+Статус: **M2a foreground runtime и отдельный M2b реализованы**; M2a real-host trial
+и M2b real-provider/model acceptance ещё открыты.
 Порядок работ — [roadmap](../ROADMAP.md). Обоснование стека —
 [ADR-001](../decisions/ADR-001-local-modular-core.md).
 
@@ -33,6 +35,11 @@ M2a реализован в `src/security_orchestrator` с entry point `sec`, с
 4. **Интерфейсы** — CLI, затем локальная UI — вызывают одни прикладные операции.
 5. **AI-адаптеры** получают evidence packs через отдельный policy layer. Возвращают
    предложения и объяснения; права приложения не передаются модели.
+
+M2b реализован в `investigation/`: отдельный read-only reader SQLite v2, export projection,
+строгие schemas, bounded application service, adapters OpenRouter/Ollama и synthetic benchmark.
+Config M2a v1/fingerprint не меняются; AI settings имеют отдельный файл и contract.
+Нет writes анализа в watchdog DB. [Решение и последствия](../decisions/ADR-003-m2b-investigation-boundary.md).
 
 Не создавать отдельный сервис на каждый модуль, event bus, vector database,
 динамическую загрузку plugins или универсальный agent framework без необходимости.

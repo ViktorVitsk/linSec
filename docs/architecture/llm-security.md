@@ -2,7 +2,12 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
-Дата решения: 2026-09-10. Статус: **требования M2b, не реализованная защита**.
+Дата решения: 2026-09-10, обновление реализации: 2026-09-11.
+Статус: **M2b policy/export boundary реализован и проверен синтетически**.
+Реальные provider/model acceptance и local runtime measurements открыты.
+CLI, точные лимиты, privacy projection и остаточные риски —
+[M2B-INVESTIGATION](../operations/M2B-INVESTIGATION.md), совместимость —
+[ADR-003](../decisions/ADR-003-m2b-investigation-boundary.md).
 Основа — [архитектура](overview.md) и [правила безопасности](../operations/safety-rules.md).
 Уточнение 2026-09-11: [границы доверия перед M2b](trust-boundaries.md). Локальная
 SQLite, accepted baseline и terminal escaping не делают evidence доверенным или
@@ -25,6 +30,11 @@ Deterministic detection работает независимо от модели.
 - сравнить evidence с конкретным baseline;
 - прочитать соответствующий runbook из подготовленного локального каталога;
 - запросить повторный сбор из уже разрешённого набора collectors.
+
+Реализованное подмножество во время M2a trial: alert/observations, конкретный baseline,
+prepared runbook и история того же source/object. AI-recollection запрещён до отдельного
+решения: владелец использует существующий `sec scan`, затем новый preview. Это не скрытый
+collector call. Код не предоставляет модельному запросу приложение/Store/SQL connection.
 
 Модель возвращает типизированный запрос. Прикладной policy layer валидирует schema,
 ID, доступный scope, бюджет и разрешение. Повторный сбор вызывает заранее написанный
