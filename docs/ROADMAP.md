@@ -19,7 +19,7 @@ multi-tenant и SaaS сейчас не посвящаем отдельную а�
   Есть `sec`, collectors, SQLite migrations, baseline/diff, alerts/explain, исключения,
   retention, doctor и kill switch. Synthetic replay проходит; один foreground scan
   в sandbox показал unavailable сеть и partial systemd. Это не проверка полного
-  покрытия workstation. User service не установлен, семидневный trial не выполнен.
+  покрытия workstation. User service не установлен, семидневный trial (Operational trial: [M2A_TRIAL](operations/M2A_TRIAL.md)) не выполнен.
 - M2b/M2c/M3: **ещё не реализованы**. AI integration и локальной UI нет.
 
 Уточнение 2026-09-11 перед M2b: [границы доверия](architecture/trust-boundaries.md).
