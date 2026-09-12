@@ -133,3 +133,11 @@ Pre-acceptance M2c: `test_m2c_hardening.py`, расширенный DOM test и 
 package inspection; [точные результаты и ограничения](M2C-PRE-ACCEPTANCE.md).
 `scripts/summarize_m2c_journal.py` — stdin-only minimizer для ручной фазы C,
 не host probe в test suite.
+
+## M3 synthetic validation
+
+`test_docker_posture.py` проверяет pure adapter, минимизацию, posture/drift,
+partial/removals, repeat/restart, budgets/rollback и read-only CLI/API parity.
+Расширен настоящий UI DOM test: Docker screens/pagination/inert text/logout.
+Tests/demo не имеют host Docker acquisition и не вызывают daemon/collectors/inference.
+Main M2a/M2c schemas не мигрируются. [Контракт и открытая host acceptance](M3-DOCKER-POSTURE.md).

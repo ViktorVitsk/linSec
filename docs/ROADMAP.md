@@ -40,7 +40,11 @@ multi-tenant и SaaS сейчас не посвящаем отдельную а�
   history_recovered=false. Принятые partial coverage и непроверенные аварийные/длительные
   сценарии остаются явно открытыми. Начальная M2a серия не переводилась на M2c,
   main DB остаётся v2; постоянный monitor/autostart не включён.
-- M3: **следующий increment — read-only Docker posture; реализация не начата**.
+- M3: **synthetic этап read-only Docker posture реализован**: adapter/result v1,
+  отдельная SQLite v1, deterministic findings/drift/dedup и общий CLI/UI.
+  [Контракт, демонстрация и ограничения](operations/M3-DOCKER-POSTURE.md),
+  [граница доступа](decisions/ADR-005-m3-synthetic-docker-posture.md).
+  Real-host acquisition/acceptance, worker isolation и scanners открыты; M3 целиком не закрыт.
 
 Уточнение 2026-09-11 перед M2b: [границы доверия](architecture/trust-boundaries.md).
 Исправлены C1/DEL terminal escaping, проверка сохранённого evidence и лимит partial
@@ -49,8 +53,9 @@ union; hostile-input/minimization scenarios добавлены в acceptance tes
 LLM export/action boundary относится к M2b, Docker/worker isolation — к M3/отдельным изменениям.
 
 Текущая поставка — M2a, отдельный M2b и M2c с принятой bounded host/browser acceptance.
-Следующий шаг — контракт и synthetic acceptance первого read-only Docker posture
-increment M3; [границы поставки ниже](#m3--docker-и-developer-security). История начального M2a soak
+Добавлен отдельный synthetic этап M3. Следующий шаг — согласовать real-host acquisition
+и проверить его в рамках первого Docker posture increment;
+[границы поставки ниже](#m3--docker-и-developer-security). История начального M2a soak
 сохраняется отдельно; будущие AI/M2c результаты не смешиваются с его метриками. [Совместимость без изменения M2a contracts](decisions/ADR-003-m2b-investigation-boundary.md).
 Следующий шаг M2b — сравнительный local benchmark и human review после отдельного
 выбора/проверки runtime. [Процедура trial M2a](operations/M2A-WATCHDOG.md).
@@ -123,11 +128,12 @@ Scheduled reconciliation сохраняется. Потерянные событ
 Первый полезный increment — read-only Docker posture; scanners и дополнительная
 developer telemetry идут после него, не добавляются в ту же поставку.
 
-Ближайшая работа: определить versioned минимизированный result contract и способ
-получения данных с явной границей доверия; затем adapter, deterministic findings и
-CLI/UI через общие application operations. Начать с synthetic fixtures без обращения
-к host Docker daemon. Отсутствие/неполнота доступа должны давать unavailable/partial,
-а публикация порта не должна превращаться в утверждение WAN reachability.
+Реализованы versioned минимизированный result contract, чистый synthetic adapter,
+deterministic findings и CLI/UI через общие application operations, без обращения
+к host Docker daemon. Synthetic проверки подтверждают unavailable/partial,
+отсутствие ложных removals и разграничение bind/WAN reachability.
+Ближайшая работа — выбрать и согласовать реальный acquisition с явной границей доверия;
+synthetic origin не разрешает импорт host evidence или доступ к socket.
 
 Приёмка первого increment: synthetic publications/binds, privilege/namespaces/mounts,
 capabilities/user и configuration drift; hostile metadata остаются данными, env secret

@@ -22,7 +22,9 @@ OpenRouter/Ollama adapters и synthetic benchmark. AI выключен по ум
 M2a sensors/config/storage contracts сохраняются. M2c implementation и pre-acceptance
 hardening завершены; M2c принят: **PASS WITH KNOWN LIMITATIONS**.
 [Итог acceptance и непроверенные пункты](docs/operations/M2C-ACCEPTANCE.md).
-Следующий increment — read-only Docker posture M3; реализация M3 не начата.
+M3 начат: реализован synthetic Docker posture — adapter/result v1, отдельная SQLite,
+детекторы, dedup/drift и общий CLI/UI. Доступ к настоящему Docker daemon не подключён;
+real-host acquisition/acceptance и весь M3 ещё открыты.
 
 - [Roadmap: M2a watchdog → M2b AI → M2c надёжность/UI → M3 Docker](docs/ROADMAP.md).
 - [Архитектура, ежедневный цикл и данные](docs/architecture/overview.md).
@@ -32,6 +34,7 @@ hardening завершены; M2c принят: **PASS WITH KNOWN LIMITATIONS**.
 - [Запуск M2a, CLI и приёмка](docs/operations/M2A-WATCHDOG.md).
 - [M2b: privacy preview, расследование и local benchmark](docs/operations/M2B-INVESTIGATION.md).
 - [Детекторы и ручная проверка](docs/detections/M2A-WATCHDOG.md).
+- [M3: synthetic Docker posture, запуск и границы](docs/operations/M3-DOCKER-POSTURE.md).
 - [Trust boundaries: watchdog, hostile evidence и coding agent](docs/architecture/trust-boundaries.md).
 
 ## Попробовать безопасный пример
@@ -86,8 +89,9 @@ CI настроен на GitHub-hosted runner; локальные тесты н�
 
 ## Ближайшая польза
 
-Ближайший шаг — контракт данных, границы доступа и synthetic acceptance первого
-read-only Docker posture increment M3 по [ROADMAP](docs/ROADMAP.md#m3--docker-и-developer-security).
+Следующий шаг M3 — согласовать минимизированный real-host acquisition и проверить
+Docker posture на фактическом Engine. Synthetic contract/adapter/CLI/UI уже реализованы;
+[границы и приёмка](docs/operations/M3-DOCKER-POSTURE.md).
 Полный семидневный operational trial пройдёт позже на существенно более полном runtime;
 исходный soak не подтверждает многодневную стабильность. Реальная M2b provider/model
 acceptance также остаётся отдельной задачей. В M2a нет облачных запросов и host remediation;

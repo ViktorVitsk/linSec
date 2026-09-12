@@ -84,6 +84,15 @@ def parser() -> argparse.ArgumentParser:
     reliable.add_argument("--m2c-state", type=Path, required=True)
     reliable.add_argument("--iterations", type=int, default=0)
     commands.add_parser("m2c-demo", help="Только synthetic data в новом изолированном каталоге")
+    commands.add_parser("docker-demo", help="M3: synthetic Docker posture; без daemon")
+    docker_view = commands.add_parser("docker-view", help="M3: read-only synthetic Docker evidence")
+    docker_view.add_argument("id", type=int, nargs="?")
+    docker_view.add_argument("--docker-state", type=Path, required=True)
+    docker_view.add_argument("--limit", type=int, default=25)
+    docker_view.add_argument("--before", type=int, default=2**63 - 1)
+    ui.add_argument(
+        "--docker-state", type=Path, help="Отдельный synthetic state M3; daemon не вызывается"
+    )
     monitor = commands.add_parser("monitor")
     monitor.add_argument("--iterations", type=int, default=0, help="0: до Ctrl-C или sec disable")
     lifecycle = commands.add_parser("alert")
@@ -125,6 +134,21 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if sys.platform != "linux":
             raise InvalidInput("CLI_requires_Linux_core_is_portable")
+        if args.command == "docker-demo":
+            from .docker_posture.scenarios import replay as docker_replay
+
+            emit(docker_replay(args.state / "synthetic-docker"))
+            return 0
+        if args.command == "docker-view":
+            from .docker_posture.service import PostureQueries
+
+            queries = PostureQueries(args.docker_state)
+            emit(
+                queries.detail(args.id)
+                if args.id is not None
+                else queries.overview(args.limit, args.before)
+            )
+            return 0
         if args.command in {"investigate", "ai-benchmark"}:
             from .investigation.cli import dispatch
 

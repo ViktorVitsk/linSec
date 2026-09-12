@@ -9,7 +9,8 @@
 [Evidence и решение](../operations/M2A_TRIAL.md). M2b real-provider/model acceptance
 остаётся открытой. M2c принят с известными ограничениями;
 [итог host/browser acceptance](../operations/M2C-ACCEPTANCE.md).
-Следующий increment — read-only Docker posture M3; реализация M3 не начата.
+M3 начат отдельным synthetic Docker posture: result/adapter, SQLite и общий CLI/UI.
+Real-host acquisition и acceptance открыты; [ADR-005](../decisions/ADR-005-m3-synthetic-docker-posture.md).
 Порядок работ — [roadmap](../ROADMAP.md). Обоснование стека —
 [ADR-001](../decisions/ADR-001-local-modular-core.md).
 
@@ -45,6 +46,12 @@ M2b реализован в `investigation/`: отдельный read-only reade
 строгие schemas, bounded application service, adapters OpenRouter/Ollama и synthetic benchmark.
 Config M2a v1/fingerprint не меняются; AI settings имеют отдельный файл и contract.
 Нет writes анализа в watchdog DB. [Решение и последствия](../decisions/ADR-003-m2b-investigation-boundary.md).
+
+M3: `adapters/docker.py` — чистая проекция встроенных synthetic fixtures;
+`docker_posture/` — contract, rules, отдельная SQLite v1 и общие queries.
+Host acquisition, принятие baseline, scheduled monitoring и AI export для Docker
+не реализованы. `sec docker-demo` создаёт новый synthetic state; `docker-view` и
+UI читают его. Main SOURCES/config/DB и reliability schema не меняются.
 
 Не создавать отдельный сервис на каждый модуль, event bus, vector database,
 динамическую загрузку plugins или универсальный agent framework без необходимости.

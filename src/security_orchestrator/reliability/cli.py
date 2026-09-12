@@ -13,7 +13,9 @@ from .store import ReliabilityStore
 
 def dispatch(args, config, emit):
     if args.command in {"view", "ui"}:
-        queries = Queries(args.state, config, args.m2c_state)
+        queries = Queries(
+            args.state, config, args.m2c_state, docker=getattr(args, "docker_state", None)
+        )
         if args.command == "view":
             emit(
                 queries.detail(args.id)

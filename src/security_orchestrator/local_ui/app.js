@@ -75,7 +75,7 @@
     $("error").hidden = false;
   }
   function show(name) {
-    ["overview", "alerts", "detail"].forEach(id => $(id).hidden = id !== name);
+    ["overview", "alerts", "detail", "docker", "docker-detail"].forEach(id => $(id).hidden = id !== name);
     $("error").hidden = true;
   }
   function stamp() {
@@ -89,7 +89,7 @@
     $("workspace").hidden = true;
     $("login").hidden = false;
     $("logout").hidden = true;
-    ["overview", "alerts", "detail"].forEach(id => $(id).replaceChildren());
+    ["overview", "alerts", "detail", "docker", "docker-detail"].forEach(id => $(id).replaceChildren());
     $("updated").textContent = "";
     $("error").textContent = "";
     $("error").hidden = true;
@@ -108,6 +108,8 @@
     if (!token) return false;
     try {
       await (route.page === "detail" ? detail(route.id)
+        : route.page === "docker" ? docker(route.before)
+        : route.page === "docker-detail" ? dockerDetail(route.id)
         : route.page === "alerts" ? alerts(route.before) : overview());
       return currentSession === session && currentNavigation === navigation;
     } catch (e) {
@@ -194,6 +196,48 @@
     stamp();
   }
 
+  async function docker(before) {
+    show("docker");
+    const data = await api("/api/docker?limit=25" + (before ? "&before=" + before : ""));
+    const panel = $("docker");
+    panel.replaceChildren(node("h1", "Docker posture · M3"), node("p",
+      "Синтетические сценарии. Эти данные не описывают текущий хост. Доступ к Docker daemon не подключён.", "warning"));
+    if (data.state === "not_configured") {
+      panel.append(node("p", "Укажите отдельный каталог synthetic M3 при запуске UI: --docker-state."));
+      stamp();
+      return;
+    }
+    panel.append(node("p", label(data.state) + " · " + label(data.reason)), node("p", data.at, "muted"));
+    if (data.stale || data.storage_failure) panel.append(node("p",
+      "Evidence устарело или последняя запись не подтверждена. Это не PASS.", "warning"));
+    panel.append(node("p", "Показаны конфигурационные риски и история изменений. Unknown сохраняет прежнее предупреждение при пробеле наблюдения; recorded — историческое событие."));
+    for (const finding of data.items) {
+      const row = node("div", undefined, "alert-row"), facts = node("div");
+      const button = node("button", "Evidence #" + finding.id);
+      button.addEventListener("click", () => navigate({ page: "docker-detail", id: finding.id }));
+      facts.append(node("strong", finding.summary), node("p", finding.rule + " · " + finding.state),
+        node("p", finding.at, "muted"));
+      row.append(node("span", finding.severity, "badge " + finding.severity), facts, button);
+      panel.append(row);
+    }
+    if (data.next_before) {
+      const button = node("button", "Следующая страница");
+      button.addEventListener("click", () => navigate({ page: "docker", before: data.next_before }));
+      panel.append(button);
+    }
+    stamp();
+  }
+
+  async function dockerDetail(id) {
+    show("docker-detail");
+    const data = await api("/api/docker/" + id), panel = $("docker-detail");
+    panel.replaceChildren(node("h1", "Docker evidence #" + id), node("p", "Только synthetic evidence", "warning"));
+    panel.append(node("p", data.summary), node("h2", "Что проверить"), node("p", data.manual_check),
+      node("h2", "Ограничения"), node("p", data.limitations), node("p", "Автоматических действий нет."));
+    pretty(panel, "Нормализованные поля и ссылки evidence", data);
+    stamp();
+  }
+
   function timeline(panel, data) {
     panel.append(node("h2", "Timeline расследования"));
     const saved = data.saved_investigation;
@@ -253,6 +297,7 @@
   $("logout").addEventListener("click", forget);
   $("overview-button").addEventListener("click", () => navigate({ page: "overview" }));
   $("alerts-button").addEventListener("click", () => navigate({ page: "alerts" }));
+  $("docker-button").addEventListener("click", () => navigate({ page: "docker" }));
   $("refresh").addEventListener("click", render);
   window.addEventListener("popstate", event => {
     const saved = Number.isSafeInteger(event.state) ? routes.get(event.state) : undefined;

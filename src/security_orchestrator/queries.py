@@ -120,13 +120,31 @@ class AlertSummary:
 
 
 class Queries:
-    def __init__(self, directory: Path, config: Config, reliability: Path | None = None, clock=now):
+    def __init__(
+        self,
+        directory: Path,
+        config: Config,
+        reliability: Path | None = None,
+        clock=now,
+        docker: Path | None = None,
+    ):
         self.directory, self.config, self.reliability, self.clock = (
             directory,
             config,
             reliability,
             clock,
         )
+        self.docker = docker
+
+    def docker_overview(self, limit=25, before=2**63 - 1):
+        from .docker_posture.service import PostureQueries
+
+        return PostureQueries(self.docker, self.clock).overview(limit, before)
+
+    def docker_detail(self, finding_id):
+        from .docker_posture.service import PostureQueries
+
+        return PostureQueries(self.docker, self.clock).detail(finding_id)
 
     def overview(self) -> dict:
         reader = bounded_reader(self.directory)
