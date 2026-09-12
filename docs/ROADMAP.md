@@ -19,8 +19,11 @@ multi-tenant и SaaS сейчас не посвящаем отдельную а�
   Есть `sec`, collectors, SQLite migrations, baseline/diff, alerts/explain, исключения,
   retention, doctor и kill switch. Synthetic replay проходит; один foreground scan
   в sandbox показал unavailable сеть и partial systemd. Это не проверка полного
-  покрытия workstation. По сообщению владельца 2026-09-11 M2a переходит в отдельный
-  семидневный real-host trial ([M2A_TRIAL](operations/M2A_TRIAL.md)); его результаты ещё открыты.
+  покрытия workstation. Начальный real-host soak завершён владельцем 2026-09-12;
+  на последнем checkpoint — ~23ч38м работы без наблюдаемого operational blocker,
+  затем monitor остановлен. Полный семидневный trial перенесён на integration/release-candidate
+  stage, не отменён и не блокирует M2c acceptance/дальнейшую разработку.
+  Это не подтверждение многодневной стабильности; [evidence и решение](operations/M2A_TRIAL.md).
 - M2b: **код и synthetic acceptance реализованы**: отдельный read-only export/policy
   layer, providers, privacy preview, typed operations, budgets и deterministic fallback.
   [Запуск и границы](operations/M2B-INVESTIGATION.md). Реальные provider/model acceptance,
@@ -31,8 +34,9 @@ multi-tenant и SaaS сейчас не посвящаем отдельную а�
   runtime и read-only local UI с access control. [Контракты](architecture/M2C-RELIABILITY.md),
   [приёмка/ограничения](operations/M2C-LOCAL-UI.md),
   [итоговый отчёт](operations/M2C-IMPLEMENTATION.md). Host/browser acceptance открыта;
-  текущий trial не переводился на M2c, main DB остаётся v2.
-  **Operational validation:** initial M2a foreground soak completed on 2026-09-12 after ~23h38m of normal workstation use with no observed operational blocker. The full planned 7-day operational soak remains required but is deferred to a later integration/release-candidate stage so it evaluates a substantially complete runtime. It is not a blocker for M2c manual acceptance or continued development.
+  начальная M2a серия не переводилась на M2c, main DB остаётся v2.
+  [Pre-acceptance hardening](operations/M2C-PRE-ACCEPTANCE.md) завершён; новый runtime
+  активируется отдельным решением на выделенном state, без ожидания отложенного trial.
 - M3: **не начат**.
 
 Уточнение 2026-09-11 перед M2b: [границы доверия](architecture/trust-boundaries.md).
@@ -41,9 +45,9 @@ union; hostile-input/minimization scenarios добавлены в acceptance tes
 явно acknowledged, не clean state. Same-UID tampering принят как residual risk;
 LLM export/action boundary относится к M2b, Docker/worker isolation — к M3/отдельным изменениям.
 
-Текущая поставка — M2a и отдельный M2b с synthetic acceptance. Владелец проходит
-host coverage/baseline review и trial M2a отдельно; AI-результаты не смешиваются с его
-метриками. [Совместимость без изменения M2a contracts](decisions/ADR-003-m2b-investigation-boundary.md).
+Текущая поставка — M2a, отдельный M2b и M2c с synthetic acceptance/hardening.
+Следующий шаг — ручная M2c host/browser acceptance. История начального M2a soak
+сохраняется отдельно; будущие AI/M2c результаты не смешиваются с его метриками. [Совместимость без изменения M2a contracts](decisions/ADR-003-m2b-investigation-boundary.md).
 Следующий шаг M2b — сравнительный local benchmark и human review после отдельного
 выбора/проверки runtime. [Процедура trial M2a](operations/M2A-WATCHDOG.md).
 Системные операции не разрешаются автоматически принятием roadmap.

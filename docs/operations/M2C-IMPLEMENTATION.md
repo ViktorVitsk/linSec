@@ -2,7 +2,8 @@
 
 Завершение проверки: 2026-09-12. Основа изменений: `cf1d7f3`.
 Статус: **реализация и synthetic acceptance завершены; real-host/browser acceptance открыта**.
-Изменения находятся в рабочем дереве для review; commit/push не выполнялись.
+На момент составления отчёта изменения находились в рабочем дереве; commit/push
+этой задачей не выполнялись. Позднее implementation зафиксирован в `afde9f8`.
 
 ## Implemented
 
@@ -89,7 +90,13 @@ identity, constraints/indexes, transactional checkpoint; upgrade/restart/rollbac
 UI использует mode=ro/query_only, не меняет main journal mode. Реальная trial DB не
 мигрировалась и не открывалась writable этим заданием.
 
-## Trial compatibility
+## Trial compatibility на момент implementation
+
+Последующее обновление 2026-09-12: владелец завершил начальный soak и остановил
+monitor; полный семидневный trial перенесён и не блокирует M2c acceptance.
+[Результаты и решение](M2A_TRIAL.md), [актуальная процедура M2c](M2C-LOCAL-UI.md).
+Ниже — историческая совместимость и ограничения на момент implementation; прежнее
+ожидание окончания trial заменено новым решением, evidence о невмешательстве сохранено.
 
 - Runtime-поведение уже работающего M2a monitor не менялось; restart/reload не выполнялся.
 - Existing collectors, config, model/detectors, Store и старый runtime файлы неизменны.

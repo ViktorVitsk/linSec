@@ -6,9 +6,18 @@
 приёмки, не для автоматической активации на workstation. M3 не начат.
 
 Implementation уже был отдельным commit `afde9f8`; pre-M2c база — `cf1d7f3`.
-На старте рабочее дерево чистое; global/project AGENTS прочитаны, неожиданных
-изменений policy/config не обнаружено. Hardening выполнен отдельным рабочим diff.
+На старте review рабочее дерево было чистое; global/project AGENTS прочитаны, неожиданных
+изменений policy/config не обнаружено. Hardening был выполнен отдельным рабочим diff; позднее зафиксирован в `48a10f1`.
 Новых dependencies, persistent schema migrations, privileged actions нет.
+
+## Обновление после review — 2026-09-12
+
+Владелец завершил начальный M2a soak и остановил monitor; полный семидневный trial
+перенесён на integration/release-candidate stage. [Запись владельца](M2A_TRIAL.md).
+Это последующее действие, не часть review. Исторические результаты tests и отсутствие
+вмешательства агента в работавший тогда monitor ниже сохранены. Прежнее ожидание
+окончания trial больше не блокирует M2c acceptance; актуальная [фаза D](M2C-LOCAL-UI.md#phase-d--отдельная-reliable-monitor-acceptance)
+по-прежнему требует отдельного решения владельца и нового state.
 
 ## Defects found
 
@@ -249,15 +258,15 @@ Remote CI, реальный listener/browser и host acceptance не выпол�
 
 1. **A:** help и `view`/alerts/detail — read-only inspection, без listener/migration.
 2. **B:** новый `m2c-demo` directory → отдельный loopback UI → browser negative/UX checks;
-   Ctrl-C только UI. Отметить дополнительную нагрузку, если выполнять во время trial.
+   Ctrl-C только UI. Метрики не объединять с завершённым M2a soak.
 3. **C:** версия journalctl, bounded unprivileged sample → trusted minimizer → только
    counts. Каждый тип service/timer подтверждается отдельно; zero/error — UNKNOWN.
-4. **D:** **DO NOT RUN DURING CURRENT M2a TRIAL**. После отдельного решения новая
-   monitoring series, две одиночные итерации/restart, между ними read-only `view`.
+4. **D:** после отдельного решения владельца новая monitoring series, две одиночные
+   итерации/restart, между ними read-only `view`. Ждать отложенного полного trial не нужно.
 
-## Trial compatibility и рекомендация
+## Trial compatibility на момент review и рекомендация
 
-Running M2a operational trial **не затронут действиями review**: его DB не открывалась
+Работавший на момент review M2a operational trial **не затронут действиями review**: его DB не открывалась
 даже read-only, path не искался, pragmas/schema/state/baseline/config не менялись;
 monitor не останавливался и не перезапускался. Host collectors/journal probes,
 listeners, реальные OpenRouter/Ollama calls, sudo/services/permissions/attacks отсутствуют.
@@ -266,7 +275,9 @@ listeners, реальные OpenRouter/Ollama calls, sudo/services/permissions/a
 **READY WITH KNOWN LIMITATIONS**: воспроизведённые defects исправлены в пределах M2c,
 195 tests PASS; остаются два pre-existing formatting FAIL и обязательная manual
 real-host/browser acceptance. Target service/timer presence и реальная browser
-совместимость пока не подтверждены. Не активировать M2c runtime во время M2a trial.
+совместимость пока не подтверждены. После последующего завершения начального soak
+M2c runtime можно принимать отдельно по актуальной фазе D, без ожидания полного trial;
+автоматической activation нет.
 
 ## Проверенные первоисточники
 

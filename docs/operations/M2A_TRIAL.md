@@ -4,9 +4,20 @@
 
 ## Trial status
 
-Started: 2026-09-11
-Duration target: 7 days
-Status: in progress
+Обновлено: 2026-09-12.
+
+- Начальная серия: 2026-09-11 → 2026-09-12, operational soak завершён.
+- Monitor остановлен владельцем; это сообщение владельца, не новый live probe.
+- На последнем checkpoint наблюдалось `23:38:07` работы. Точное время и способ
+  последующей остановки отдельно не зафиксированы.
+- Полный семидневный trial **не завершён**: перенесён на integration/release-candidate
+  stage, не отменён и не блокирует ручную M2c acceptance или дальнейшую разработку.
+- Новый runtime не активирован этой записью. Сохранённая trial DB — evidence первой
+  серии; её не использовать как synthetic state и не изменять ради M2c acceptance.
+
+Ниже сохранены observations начального запуска и итоговый soak checkpoint.
+PID, source freshness и `orchestrator disabled=false` относятся к моментам измерений,
+а не к текущему состоянию после остановки.
 
 ## Start state
 
@@ -44,24 +55,13 @@ These limitations are intentionally not resolved by elevating watchdog privilege
 - SQLite schema migrated v1 → v2.
 - Regression suite: 68 tests passing.
 
-## Trial observations
-
-### Day 1
-...
-
-### Day 2
-...
-
-## Metrics
-
-[Publication redaction: private workstation observation/configuration omitted.]
-
-
-
-## Final assessment
+## Initial runtime checkpoint
 
 Actual trial observation start: 2026-09-11T17:11:21.752213+03:00
-Planned trial end: 2026-09-18T17:11:21.752213+03:00
+Originally planned trial end: 2026-09-18T17:11:21.752213+03:00
+
+Эта первоначальная дата больше не действует после переноса полного trial.
+Новая дата старта/завершения семидневной серии не назначена.
 
 Initial runtime checkpoint:
 
@@ -198,3 +198,7 @@ Rationale:
 * ordinary suspend/reboot/logout behaviour should be included in that later operational trial rather than requiring 168 hours of uninterrupted uptime.
 
 The initial M2a soak therefore does **not** block continued M2c acceptance or subsequent development.
+
+Актуальный следующий шаг: [ручная M2c acceptance, phases A–D](M2C-LOCAL-UI.md#ручная-приёмка-после-review).
+Остановка monitor не является автоматическим разрешением запускать новый runtime
+или выполнять host/system-changing операции.

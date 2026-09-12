@@ -25,19 +25,24 @@
 `view` exit 0 означает, что query выполнен, а не healthy host; состояние находится
 в полях ответа. Прежние `scan/status/doctor` exit 2 для partial/degraded сохранены.
 
-## Важное для текущего семидневного trial
+## Совместимость с завершённым начальным M2a soak
 
-Обычный `monitor`, collectors, detector/context/snapshot fingerprints, Config v1,
-baseline/partial/retention semantics и watchdog SQLite v2 не изменены. Existing
-foreground процесс не перезапускался, trial DB не открывалась writable и не мигрировалась,
-baseline/alerts/notifications/sensor settings не менялись. LLM/providers не включались.
-Trial может продолжаться прежним процессом без restart/migration.
+Обновление 2026-09-12: владелец остановил M2a monitor после начального soak;
+на последнем checkpoint наблюдалось ~23ч38м работы. Полный семидневный trial
+перенесён на integration/release-candidate stage, не отменён и **не блокирует M2c
+acceptance**. [Источник, observations и ограничения](M2A_TRIAL.md).
 
-До завершения trial/review НЕ заменять его на monitor-reliable. Event-triggered scans
-меняют частоту collection/occurrences/resource usage, поэтому это новая operational
-серия. Не использовать synthetic-demo DB как baseline реального host. Новый UI —
-отдельный процесс и потребление ресурсов: для строгих trial resource measurements
-также лучше активировать после trial либо явно отметить отдельное окно.
+Во время implementation/hardening работавший тогда M2a monitor не перезапускался,
+trial DB не мигрировалась и baseline/config не менялись. Это история тех задач,
+а не утверждение, что процесс работает сейчас. Коллекторы, detector/baseline/partial
+semantics и watchdog SQLite v2 сохраняют прежний contract.
+
+Начальную trial DB сохранить как evidence отдельной серии. Для synthetic UI и
+reliable monitor acceptance использовать новые выделенные directories; не переносить
+demo baseline на реальный host. Event-triggered scans меняют частоту collection,
+occurrences и resource usage, поэтому M2c результаты учитывать отдельно.
+Остановка M2a снимает прежнее ожидание окончания trial, но **не запускает и не разрешает
+автоматически** новый runtime: фаза D требует отдельного решения владельца.
 
 ## Access control и запуск UI
 
@@ -61,7 +66,8 @@ wrong permissions/symlink приложение отказывает, а не и�
 Ниже команды **для человека**, они не были выполнены агентом на host.
 Из корня repo, уже подготовленная `.venv`; без install/sync, sudo, services,
 изменения групп/permissions, AI/provider calls. `TRIAL_STATE` и `DEMO_DIRECTORY`
-заменить на проверенные пути, не копировать placeholders буквально.
+заменить на проверенные пути, не копировать placeholders буквально. `TRIAL_STATE`
+здесь означает сохранённый state **завершённой начальной серии**, а не активный trial.
 Для каждой фазы записать результат и ограничения; отсутствие данных — UNKNOWN.
 
 ### Phase A — M2c read-only inspection
@@ -78,6 +84,7 @@ uv run --cache-dir .cache/uv --no-sync sec --state TRIAL_STATE view ALERT_ID
 и детали существующего ID через SQLite `mode=ro/query_only`. Listener и collectors
 не запускаются; main DB не мигрируется. Python/uv могут создать project cache/bytecode.
 Успех: JSON без raw metadata, версии main DB=2, различимы partial/stale/config mismatch;
+после остановки ожидаемы `not_running` и со временем `stale`, это не новый defect;
 exit 0 означает выполненную query, **не** healthy host. Без sidecar нормально
 `not_configured`. Ошибка locked/corrupt/missing DB — остановить приёмку этого шага,
 не «лечить» trial SQL/PRAGMA. Ctrl-C завершает только query, cleanup не требуется.
@@ -99,8 +106,8 @@ uv run --cache-dir .cache/uv --no-sync sec --state DEMO_DIRECTORY/watchdog ui --
 ```
 
 Создаёт foreground listener `127.0.0.1:8765`; БД только читаются. Риск: дополнительная
-нагрузка и занятый порт; если порт занят, не останавливать чужой процесс. При строгом
-учёте trial resources отметить отдельное окно или отложить B до конца trial.
+нагрузка и занятый порт; если порт занят, не останавливать чужой процесс.
+Результаты UI acceptance учитывать отдельно от метрик завершённого M2a soak.
 Новый random key из password manager ввести скрыто; вручную открыть **реальный
 локальный browser** на адресе stdout. Не использовать remote browser/proxy/forwarding.
 
@@ -119,7 +126,7 @@ expiry/остановки сервера. Reload страницы забывае
 8 часов здесь не обязательно. Clipboard/password-manager/browser extensions вне
 контроля UI; после ввода очистить clipboard средствами пользователя.
 Ctrl-C в **терминале UI** закрывает listener; повторное открытие URL не обслуживается.
-Закрыть вкладки; synthetic directories можно сохранить. Trial monitor не трогать.
+Закрыть вкладки; synthetic directories можно сохранить. Завершённую trial DB не менять.
 
 ### Phase C — journald read-only validation
 
@@ -150,10 +157,12 @@ journal retention ради PASS. Можно повторить позже пос
 Никакого полного auth coverage/history recovery эта команда не подтверждает.
 Timeout/Ctrl-C останавливает только эту pipeline; нет host изменений и cleanup.
 
-### Phase D — post-trial reliable monitor acceptance
+### Phase D — отдельная reliable monitor acceptance
 
-**DO NOT RUN DURING CURRENT M2a TRIAL.** Только после завершения trial и отдельного
-решения об activation. Проверить, что следующие directories ещё не существуют;
+**Только после отдельного решения владельца об activation.** Начальный M2a soak
+завершён; ждать отложенного семидневного trial не требуется. Эти команды подготовлены
+для ручной приёмки и не выполнены при обновлении документации.
+Проверить, что следующие directories ещё не существуют;
 не подставлять trial или demo directory. Если существуют — остановиться и выбрать
 новые имена после проверки, не удалять evidence.
 

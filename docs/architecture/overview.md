@@ -3,8 +3,11 @@
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
 Дата решения: 2026-09-10, обновление 2026-09-12.
-Статус: **M2a foreground runtime, отдельный M2b и opt-in M2c реализованы**; M2a real-host trial
-и M2b real-provider/model acceptance ещё открыты.
+Статус: **M2a foreground runtime, отдельный M2b и opt-in M2c реализованы**.
+Начальный M2a soak завершён, monitor остановлен владельцем 2026-09-12; полный
+семидневный trial перенесён на integration/release-candidate stage и не блокирует M2c.
+[Evidence и решение](../operations/M2A_TRIAL.md). M2b real-provider/model и M2c
+real-host/browser acceptance ещё открыты.
 Порядок работ — [roadmap](../ROADMAP.md). Обоснование стека —
 [ADR-001](../decisions/ADR-001-local-modular-core.md).
 

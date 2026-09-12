@@ -6,18 +6,21 @@
 и учиться безопасности на реальных событиях. **Безопасность → надёжность → понятность
 → простота → автоматизация → функции.**
 
-## Состояние на 2026-09-11
+## Состояние на 2026-09-12
 
 **M0/M1 завершены в согласованном scope. Реализован foreground runtime M2a:**
 устанавливаемый `sec`, Linux collectors, SQLite, baseline/diff, история, предупреждения
 с русскими объяснениями, узкие исключения, freshness/doctor и kill switch.
 Проверены synthetic replay и обработка ограничений sandbox. Полнота сбора на хосте
 и семидневная эксплуатационная приёмка ещё не подтверждены. M2a не объявлен закрытым.
-Владелец проводит семидневный real-host operational trial отдельно.
+Владелец остановил monitor после начального soak (~23ч38м на последнем checkpoint).
+Полный семидневный trial перенесён на integration/release-candidate stage и не блокирует
+M2c acceptance; [результаты и решение](docs/operations/M2A_TRIAL.md).
 Добавлен M2b: read-only evidence packs, privacy preview, bounded typed investigation,
 OpenRouter/Ollama adapters и synthetic benchmark. AI выключен по умолчанию;
 реальные provider calls, сравнительные измерения моделей и human acceptance ещё открыты.
-M2a sensors/config/storage contracts сохраняются; M2c/M3 не начаты.
+M2a sensors/config/storage contracts сохраняются. M2c implementation и pre-acceptance
+hardening завершены; ручная host/browser acceptance открыта. M3 не начат.
 
 - [Roadmap: M2a watchdog → M2b AI → M2c надёжность/UI → M3 Docker](docs/ROADMAP.md).
 - [Архитектура, ежедневный цикл и данные](docs/architecture/overview.md).
@@ -81,16 +84,17 @@ CI настроен на GitHub-hosted runner; локальные тесты н�
 
 ## Ближайшая польза
 
-Ближайший шаг — проверить покрытие M2a в обычном пользовательском окружении и
-провести семидневный foreground trial. M2b добавит ручное расследование с LLM/SLM
-после этой проверки. В M2a нет облачных запросов и host remediation;
+Ближайший шаг — ручная M2c host/browser acceptance на отдельном state.
+Полный семидневный operational trial пройдёт позже на существенно более полном runtime;
+исходный soak не подтверждает многодневную стабильность. Реальная M2b provider/model
+acceptance также остаётся отдельной задачей. В M2a нет облачных запросов и host remediation;
 `LLM_ENABLED=false` сохраняет весь реализованный цикл.
 
 ## M2c: reliability и local UI
 
 Реализованы отдельные cursor/gaps/dedup и read-only local UI. Существующий M2a
 monitor/SQLite v2 сохраняют поведение; новый `monitor-reliable` активируется отдельно
-после trial review. UI не запускает AI и не меняет baseline/alerts/host settings.
+после отдельного решения владельца, без ожидания отложенного полного trial. UI не запускает AI и не меняет baseline/alerts/host settings.
 
 - [Запуск, безопасность ключа и ручная приёмка](docs/operations/M2C-LOCAL-UI.md).
 - [Journald scope, gaps, reconciliation и schema](docs/architecture/M2C-RELIABILITY.md).

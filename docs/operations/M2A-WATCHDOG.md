@@ -3,7 +3,11 @@
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
 Дата: 2026-09-10. Код и synthetic checks реализованы. **M2a ещё не закрыт:**
-нужны обычный host foreground scan, ручной review baseline и семидневный trial.
+исходная процедура включала host foreground scan, ручной review baseline и семидневный trial.
+Обновление 2026-09-12: initial soak завершён, monitor остановлен владельцем.
+Полный trial перенесён на integration/release-candidate stage; это не блокирует M2c
+acceptance. [Фактические observations и ограничения](M2A_TRIAL.md).
+Команды ниже — процедура ручного запуска, не утверждение о работающем сейчас процессе.
 Системные настройки при разработке не менялись. Нет установленного user service,
 schedule, root daemon, host remediation, AI/provider/облачных запросов.
 
