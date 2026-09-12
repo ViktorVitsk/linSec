@@ -32,6 +32,7 @@ multi-tenant и SaaS сейчас не посвящаем отдельную а�
   [приёмка/ограничения](operations/M2C-LOCAL-UI.md),
   [итоговый отчёт](operations/M2C-IMPLEMENTATION.md). Host/browser acceptance открыта;
   текущий trial не переводился на M2c, main DB остаётся v2.
+  **Operational validation:** initial M2a foreground soak completed on 2026-09-12 after ~23h38m of normal workstation use with no observed operational blocker. The full planned 7-day operational soak remains required but is deferred to a later integration/release-candidate stage so it evaluates a substantially complete runtime. It is not a blocker for M2c manual acceptance or continued development.
 - M3: **не начат**.
 
 Уточнение 2026-09-11 перед M2b: [границы доверия](architecture/trust-boundaries.md).
