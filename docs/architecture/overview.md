@@ -6,8 +6,10 @@
 Статус: **M2a foreground runtime, отдельный M2b и opt-in M2c реализованы**.
 Начальный M2a soak завершён, monitor остановлен владельцем 2026-09-12; полный
 семидневный trial перенесён на integration/release-candidate stage и не блокирует M2c.
-[Evidence и решение](../operations/M2A_TRIAL.md). M2b real-provider/model и M2c
-real-host/browser acceptance ещё открыты.
+[Evidence и решение](../operations/M2A_TRIAL.md). M2b real-provider/model acceptance
+остаётся открытой. M2c принят с известными ограничениями;
+[итог host/browser acceptance](../operations/M2C-ACCEPTANCE.md).
+Следующий increment — read-only Docker posture M3; реализация M3 не начата.
 Порядок работ — [roadmap](../ROADMAP.md). Обоснование стека —
 [ADR-001](../decisions/ADR-001-local-modular-core.md).
 

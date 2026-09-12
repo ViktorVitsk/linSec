@@ -20,7 +20,9 @@ M2c acceptance; [результаты и решение](docs/operations/M2A_TRI
 OpenRouter/Ollama adapters и synthetic benchmark. AI выключен по умолчанию;
 реальные provider calls, сравнительные измерения моделей и human acceptance ещё открыты.
 M2a sensors/config/storage contracts сохраняются. M2c implementation и pre-acceptance
-hardening завершены; ручная host/browser acceptance открыта. M3 не начат.
+hardening завершены; M2c принят: **PASS WITH KNOWN LIMITATIONS**.
+[Итог acceptance и непроверенные пункты](docs/operations/M2C-ACCEPTANCE.md).
+Следующий increment — read-only Docker posture M3; реализация M3 не начата.
 
 - [Roadmap: M2a watchdog → M2b AI → M2c надёжность/UI → M3 Docker](docs/ROADMAP.md).
 - [Архитектура, ежедневный цикл и данные](docs/architecture/overview.md).
@@ -84,7 +86,8 @@ CI настроен на GitHub-hosted runner; локальные тесты н�
 
 ## Ближайшая польза
 
-Ближайший шаг — ручная M2c host/browser acceptance на отдельном state.
+Ближайший шаг — контракт данных, границы доступа и synthetic acceptance первого
+read-only Docker posture increment M3 по [ROADMAP](docs/ROADMAP.md#m3--docker-и-developer-security).
 Полный семидневный operational trial пройдёт позже на существенно более полном runtime;
 исходный soak не подтверждает многодневную стабильность. Реальная M2b provider/model
 acceptance также остаётся отдельной задачей. В M2a нет облачных запросов и host remediation;
@@ -97,8 +100,11 @@ monitor/SQLite v2 сохраняют поведение; новый `monitor-rel
 после отдельного решения владельца, без ожидания отложенного полного trial. UI не запускает AI и не меняет baseline/alerts/host settings.
 
 - [Запуск, безопасность ключа и ручная приёмка](docs/operations/M2C-LOCAL-UI.md).
+- [Итог M2c acceptance: PASS WITH KNOWN LIMITATIONS](docs/operations/M2C-ACCEPTANCE.md).
 - [Journald scope, gaps, reconciliation и schema](docs/architecture/M2C-RELIABILITY.md).
 - [Threat model локального интерфейса](docs/architecture/M2C-UI-SECURITY.md).
 
 `sec view` — read-only запросы без migration; `sec ui --help` — отдельный foreground
-интерфейс. Real-host/browser acceptance M2c ещё открыта, M3 не начат.
+интерфейс. A/B PASS и C service PASS подтверждены владельцем; D пройдена отдельной
+real-host серией. Timer events, аварийные сценарии и длительный soak не объявлены
+проверенными. Постоянный monitor/autostart и M3 этой приёмкой не запущены.

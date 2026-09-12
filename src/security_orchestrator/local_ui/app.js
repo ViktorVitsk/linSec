@@ -1,6 +1,9 @@
 "use strict";
 (() => {
-  let token = "", page = "overview", session = 0;
+  let token = "", session = 0, navigation = 0, historyId = 0;
+  let route = { page: "overview" };
+  // History may survive this document. Keep even alert IDs/cursors in tab memory only.
+  const routes = new Map();
   const $ = id => document.getElementById(id);
   const labels = {
     ok: "Доступен", partial: "Частичное наблюдение", unavailable: "Недоступен",
@@ -45,20 +48,26 @@
   }
   async function api(path) {
     const currentSession = session;
+    const currentNavigation = navigation;
     const response = await fetch(path, {
       headers: { "Authorization": "Bearer " + token, "X-Sec-UI": "1" },
       credentials: "omit", cache: "no-store", redirect: "error",
       signal: AbortSignal.timeout(7000)
     });
-    if (currentSession !== session) throw new Error("Сессия закрыта; ответ отклонён.");
+    if (currentSession !== session || currentNavigation !== navigation)
+      throw new Error("Сессия или экран изменились; ответ отклонён.");
     if (!response.ok) {
-      if (response.status === 401) forget();
+      if (response.status === 401) {
+        forget();
+        error(new Error("Ключ не принят или истёк. Введите ключ заново."));
+      }
       throw new Error(response.status === 401
         ? "Ключ не принят или истёк. Введите ключ заново."
         : "Запрос не выполнен. Данные не подтверждены; проверьте CLI и состояние БД.");
     }
     const data = await response.json();
-    if (currentSession !== session) throw new Error("Сессия закрыта; данные не отображены.");
+    if (currentSession !== session || currentNavigation !== navigation)
+      throw new Error("Сессия или экран изменились; данные не отображены.");
     return data;
   }
   function error(e) {
@@ -67,7 +76,6 @@
   }
   function show(name) {
     ["overview", "alerts", "detail"].forEach(id => $(id).hidden = id !== name);
-    page = name;
     $("error").hidden = true;
   }
   function stamp() {
@@ -82,6 +90,36 @@
     $("login").hidden = false;
     $("logout").hidden = true;
     ["overview", "alerts", "detail"].forEach(id => $(id).replaceChildren());
+    $("updated").textContent = "";
+    $("error").textContent = "";
+    $("error").hidden = true;
+    routes.clear();
+    // Cleanup also runs during pagehide; do not require an active History document.
+    route = { page: "overview" };
+  }
+
+  function remember(next, replace = false) {
+    route = next;
+    routes.set(++historyId, route);
+    window.history[replace ? "replaceState" : "pushState"](historyId, "", "/");
+  }
+  async function render() {
+    const currentSession = session, currentNavigation = ++navigation;
+    if (!token) return false;
+    try {
+      await (route.page === "detail" ? detail(route.id)
+        : route.page === "alerts" ? alerts(route.before) : overview());
+      return currentSession === session && currentNavigation === navigation;
+    } catch (e) {
+      if (currentSession === session && currentNavigation === navigation) error(e);
+      return false;
+    }
+  }
+  function navigate(next) {
+    if (!token) return;
+    if (route.page !== next.page || route.id !== next.id || route.before !== next.before)
+      remember(next);
+    return render();
   }
 
   async function overview() {
@@ -141,7 +179,7 @@
     for (const alert of data.items) {
       const row = node("div", undefined, "alert-row"), facts = node("div");
       const button = node("button", "Открыть #" + alert.id);
-      button.addEventListener("click", () => detail(alert.id).catch(error));
+      button.addEventListener("click", () => navigate({ page: "detail", id: alert.id }));
       facts.append(node("strong", alert.summary), node("p",
         `${alert.source} · ${alert.status} · ${alert.active ? "активен" : "не активен"}`),
         node("span", alert.at, "muted"));
@@ -150,7 +188,7 @@
     }
     if (data.next_before) {
       const button = node("button", "Следующая страница");
-      button.addEventListener("click", () => alerts(data.next_before).catch(error));
+      button.addEventListener("click", () => navigate({ page: "alerts", before: data.next_before }));
       panel.append(button);
     }
     stamp();
@@ -200,21 +238,28 @@
     stamp();
   }
 
-  $("connect").addEventListener("click", async () => {
+  $("key-form").addEventListener("submit", async event => {
+    event.preventDefault();
     session += 1;
     token = $("token").value;
     $("token").value = "";
-    try {
-      await overview();
+    remember(route, true);
+    if (await render()) {
       $("login").hidden = true;
       $("workspace").hidden = false;
       $("logout").hidden = false;
-    } catch (e) { error(e); }
+    }
   });
   $("logout").addEventListener("click", forget);
-  $("overview-button").addEventListener("click", () => overview().catch(error));
-  $("alerts-button").addEventListener("click", () => alerts().catch(error));
-  $("refresh").addEventListener("click", () =>
-    (page === "alerts" ? alerts() : overview()).catch(error));
+  $("overview-button").addEventListener("click", () => navigate({ page: "overview" }));
+  $("alerts-button").addEventListener("click", () => navigate({ page: "alerts" }));
+  $("refresh").addEventListener("click", render);
+  window.addEventListener("popstate", event => {
+    const saved = Number.isSafeInteger(event.state) ? routes.get(event.state) : undefined;
+    if (saved) route = saved;
+    else remember({ page: "overview" }, true);
+    return render();
+  });
   window.addEventListener("pagehide", forget);
+  remember(route, true);
 })();

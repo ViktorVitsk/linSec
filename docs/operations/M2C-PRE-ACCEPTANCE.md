@@ -2,8 +2,12 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
-Дата: 2026-09-12. Рекомендация: **READY WITH KNOWN LIMITATIONS** — для ручной M2c
+Дата: 2026-09-12. Рекомендация на момент review: **READY WITH KNOWN LIMITATIONS** — для ручной M2c
 приёмки, не для автоматической активации на workstation. M3 не начат.
+
+Последующая [M2c acceptance](M2C-ACCEPTANCE.md) завершена: **PASS WITH KNOWN LIMITATIONS**.
+Этот документ сохраняет исторические результаты hardening; утверждения «не проверено
+здесь» ниже относятся к review, а не отменяют последующую ручную/host приёмку.
 
 Implementation уже был отдельным commit `afde9f8`; pre-M2c база — `cf1d7f3`.
 На старте review рабочее дерево было чистое; global/project AGENTS прочитаны, неожиданных

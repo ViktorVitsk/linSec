@@ -29,15 +29,18 @@ multi-tenant и SaaS сейчас не посвящаем отдельную а�
   [Запуск и границы](operations/M2B-INVESTIGATION.md). Реальные provider/model acceptance,
   local runtime/GPU сравнительные измерения и оценка русского объяснения человеком открыты.
   AI выключен по умолчанию; во время разработки cloud/host inference не выполнялись.
-- M2c: **код и synthetic acceptance реализованы**: отдельная reliability SQLite v1,
+- M2c: **принят в согласованном scope — PASS WITH KNOWN LIMITATIONS**: отдельная reliability SQLite v1,
   bounded user-systemd journal hints, cursor/dedup/typed gaps, opt-in reconciliation
   runtime и read-only local UI с access control. [Контракты](architecture/M2C-RELIABILITY.md),
   [приёмка/ограничения](operations/M2C-LOCAL-UI.md),
-  [итоговый отчёт](operations/M2C-IMPLEMENTATION.md). Host/browser acceptance открыта;
-  начальная M2a серия не переводилась на M2c, main DB остаётся v2.
-  [Pre-acceptance hardening](operations/M2C-PRE-ACCEPTANCE.md) завершён; новый runtime
-  активируется отдельным решением на выделенном state, без ожидания отложенного trial.
-- M3: **не начат**.
+  [реализация](operations/M2C-IMPLEMENTATION.md),
+  [итог acceptance 2026-09-12](operations/M2C-ACCEPTANCE.md).
+  A/B PASS подтверждены владельцем; C service PASS, timer not observed; D пройдена
+  отдельной real-host серией: first observation → continuation, один сохранённый gap,
+  history_recovered=false. Принятые partial coverage и непроверенные аварийные/длительные
+  сценарии остаются явно открытыми. Начальная M2a серия не переводилась на M2c,
+  main DB остаётся v2; постоянный monitor/autostart не включён.
+- M3: **следующий increment — read-only Docker posture; реализация не начата**.
 
 Уточнение 2026-09-11 перед M2b: [границы доверия](architecture/trust-boundaries.md).
 Исправлены C1/DEL terminal escaping, проверка сохранённого evidence и лимит partial
@@ -45,8 +48,9 @@ union; hostile-input/minimization scenarios добавлены в acceptance tes
 явно acknowledged, не clean state. Same-UID tampering принят как residual risk;
 LLM export/action boundary относится к M2b, Docker/worker isolation — к M3/отдельным изменениям.
 
-Текущая поставка — M2a, отдельный M2b и M2c с synthetic acceptance/hardening.
-Следующий шаг — ручная M2c host/browser acceptance. История начального M2a soak
+Текущая поставка — M2a, отдельный M2b и M2c с принятой bounded host/browser acceptance.
+Следующий шаг — контракт и synthetic acceptance первого read-only Docker posture
+increment M3; [границы поставки ниже](#m3--docker-и-developer-security). История начального M2a soak
 сохраняется отдельно; будущие AI/M2c результаты не смешиваются с его метриками. [Совместимость без изменения M2a contracts](decisions/ADR-003-m2b-investigation-boundary.md).
 Следующий шаг M2b — сравнительный local benchmark и human review после отдельного
 выбора/проверки runtime. [Процедура trial M2a](operations/M2A-WATCHDOG.md).
@@ -114,6 +118,25 @@ Scheduled reconciliation сохраняется. Потерянные событ
 доступа, Origin/CSRF и ограничение методов, если появится web server.
 
 ## M3 — Docker и developer security
+
+Переход после [M2c acceptance](operations/M2C-ACCEPTANCE.md), 2026-09-12.
+Первый полезный increment — read-only Docker posture; scanners и дополнительная
+developer telemetry идут после него, не добавляются в ту же поставку.
+
+Ближайшая работа: определить versioned минимизированный result contract и способ
+получения данных с явной границей доверия; затем adapter, deterministic findings и
+CLI/UI через общие application operations. Начать с synthetic fixtures без обращения
+к host Docker daemon. Отсутствие/неполнота доступа должны давать unavailable/partial,
+а публикация порта не должна превращаться в утверждение WAN reachability.
+
+Приёмка первого increment: synthetic publications/binds, privilege/namespaces/mounts,
+capabilities/user и configuration drift; hostile metadata остаются данными, env secret
+values не сохраняются, повторный inventory не создаёт дубли, partial не создаёт ложные
+removals. Зафиксировать timeouts/output/resource bounds и совместимость M2a/M2c.
+До real-host adapter acceptance отдельно определить и разрешить точный способ доступа:
+read-only намерение клиента не ограничивает полномочия rootful Docker socket.
+Daemon, groups/socket permissions, container startup, scanner installation и remediation
+не разрешаются этим переходом. M1 prerequisites и отложенный integration soak сохраняются.
 
 Сначала posture: publications/binds, privileged/host namespaces, socket/sensitive
 mounts, capabilities, пользователь, restart/config changes. Env secret values

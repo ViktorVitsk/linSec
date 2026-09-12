@@ -63,10 +63,22 @@ credential/evidence; это локальный logout, не server-side revocati
   Permissions-Policy. Ошибки фиксированные; request/access/error logs отключены,
   stack traces, headers, raw payloads и keys не выводятся.
 
-CSP: default-src none; только собственные script/style/connect; img/object/base/form
-запрещены, remote CDN/fonts/analytics отсутствуют. Browser fetch использует
+CSP: default-src none; только собственные script/style/connect; object/base/form
+запрещены, remote CDN/fonts/analytics отсутствуют. Для встроенной прозрачной PNG favicon
+разрешён только `img-src data:`: HTTP(S), включая same-origin images, остаются запрещены.
+Явный `rel=icon` исключает fallback-запрос `/favicon.ico`; других image sinks нет.
+Browser fetch использует
 credentials omit, no-store, redirect error, timeout 7 секунд. UI не выполняет
 background polling. Конкретные API ответы ограничены 256 KiB.
+
+UI follow-up 2026-09-12: Back/Forward использует pushState/replaceState/popstate.
+URL всегда `/`, history state — только числовой указатель. Экран, alert ID и cursor
+хранятся в JS Map текущего документа; evidence и ключ в history не записываются.
+Logout/pagehide очищает Map вместе с ключом/evidence; неизвестная history entry
+возвращает overview и без ключа не обращается к API. Reload не восстанавливает
+маршруты/ключ. Поздние ответы проверяют session и navigation generation.
+Форма ключа использует native submit (Enter/кнопка), синхронный preventDefault;
+input без name, CSP form-action none сохраняется.
 
 ## Resource boundary и residual risks
 

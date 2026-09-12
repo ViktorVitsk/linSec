@@ -3,14 +3,18 @@
 from contextlib import redirect_stdout
 from copy import deepcopy
 from dataclasses import replace
+import base64
+from html.parser import HTMLParser
 import io
 import json
 from pathlib import Path
 import sqlite3
+import struct
 import tempfile
 import threading
 import unittest
 from unittest.mock import patch
+import zlib
 
 from security_orchestrator.application import Application
 from security_orchestrator.cli import main
@@ -222,6 +226,46 @@ class UITests(unittest.TestCase):
         for port in (-1, 0, 80, 65536, True):
             with self.assertRaises(InvalidInput):
                 validate_bind("127.0.0.1", port)
+
+    def test_embedded_favicon_and_exact_csp_without_network_images(self):
+        tags = []
+
+        class Assets(HTMLParser):
+            def handle_starttag(self, tag, attrs):
+                tags.append((tag, dict(attrs)))
+
+        Assets().feed(self.request("/")[2].decode())
+        icons = [attrs for tag, attrs in tags if tag == "link" and attrs.get("rel") == "icon"]
+        self.assertEqual(len(icons), 1)
+        icon = icons[0]
+        self.assertEqual(icon["type"], "image/png")
+        self.assertTrue(icon["href"].startswith("data:image/png;base64,"))
+        png = base64.b64decode(icon["href"].split(",", 1)[1], validate=True)
+        self.assertEqual(png[:8], b"\x89PNG\r\n\x1a\n")
+        chunks = {}
+        offset = 8
+        while offset < len(png):
+            size = struct.unpack(">I", png[offset : offset + 4])[0]
+            kind = png[offset + 4 : offset + 8]
+            payload = png[offset + 8 : offset + 8 + size]
+            crc = struct.unpack(">I", png[offset + 8 + size : offset + 12 + size])[0]
+            self.assertEqual(crc, zlib.crc32(kind + payload))
+            chunks[kind] = payload
+            offset += size + 12
+        self.assertEqual(set(chunks), {b"IHDR", b"IDAT", b"IEND"})
+        self.assertEqual(struct.unpack(">IIBBBBB", chunks[b"IHDR"]), (1, 1, 8, 6, 0, 0, 0))
+        self.assertEqual(zlib.decompress(chunks[b"IDAT"]), b"\0" * 5)
+        urls = [attrs[key] for _, attrs in tags for key in ("href", "src") if key in attrs]
+        self.assertCountEqual(urls, [icon["href"], "/style.css", "/app.js"])
+        self.assertEqual(
+            HEADERS["Content-Security-Policy"],
+            "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
+            "img-src data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; "
+            "form-action 'none'",
+        )
+        css = self.request("/style.css")[2].decode()
+        self.assertNotIn("url(", css)
+        self.assertNotIn("@import", css)
 
     def test_cli_and_ui_share_queries(self):
         output = io.StringIO()

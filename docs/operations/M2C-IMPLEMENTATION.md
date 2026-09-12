@@ -1,7 +1,10 @@
 # M2c — итоговый отчёт реализации
 
 Завершение проверки: 2026-09-12. Основа изменений: `cf1d7f3`.
-Статус: **реализация и synthetic acceptance завершены; real-host/browser acceptance открыта**.
+Статус на момент implementation: **реализация и synthetic acceptance завершены**.
+Последующая host/browser acceptance 2026-09-12: **PASS WITH KNOWN LIMITATIONS**;
+[актуальный итог и ограничения](M2C-ACCEPTANCE.md). Наблюдения и test counts ниже
+сохранены как история implementation, не переписаны результатом новой приёмки.
 На момент составления отчёта изменения находились в рабочем дереве; commit/push
 этой задачей не выполнялись. Позднее implementation зафиксирован в `afde9f8`.
 

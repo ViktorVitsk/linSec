@@ -2,7 +2,9 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
-Дата: 2026-09-11, проверки завершены 2026-09-12. Код/synthetic acceptance готовы; активация нового monitor отдельно.
+Дата: 2026-09-11, обновление 2026-09-12. M2c принят: **PASS WITH KNOWN LIMITATIONS**.
+Актуальный [итог фаз A–D и сохранённое evidence](M2C-ACCEPTANCE.md).
+Новый постоянный monitor/autostart этой приёмкой не включён.
 [Архитектура/контракты](../architecture/M2C-RELIABILITY.md),
 [threat model](../architecture/M2C-UI-SECURITY.md),
 [ADR-004](../decisions/ADR-004-m2c-reliability-local-ui.md).
@@ -63,7 +65,9 @@ wrong permissions/symlink приложение отказывает, а не и�
 ## Ручная приёмка после review
 
 Обновлено 2026-09-12 после [pre-acceptance hardening](M2C-PRE-ACCEPTANCE.md).
-Ниже команды **для человека**, они не были выполнены агентом на host.
+Ниже воспроизводимая процедура; выполненная приёмка и происхождение результатов
+зафиксированы в [M2C-ACCEPTANCE](M2C-ACCEPTANCE.md). A/B и service-часть C подтверждены
+владельцем, D выполнена агентом после явного разрешения на отдельной чистой серии.
 Из корня repo, уже подготовленная `.venv`; без install/sync, sudo, services,
 изменения групп/permissions, AI/provider calls. `TRIAL_STATE` и `DEMO_DIRECTORY`
 заменить на проверенные пути, не копировать placeholders буквально. `TRIAL_STATE`
@@ -113,11 +117,18 @@ uv run --cache-dir .cache/uv --no-sync sec --state DEMO_DIRECTORY/watchdog ui --
 
 Успех проверить вручную:
 
-- Wrong key отвергается, верный открывает overview, alerts, detail, timeline.
+- Wrong key отвергается, верный открывает overview, alerts, detail, timeline;
+  ввод через Enter и кнопку одинаково работает, поле сразу очищается.
 - Gaps остаются после reconciliation; AI hypothesis отделена от deterministic facts.
 - Hostile metadata — inert text/псевдонимы, отсутствуют внешние requests и CSP violations.
 - Pagination, две вкладки, reload, back/forward, pagehide, «Забыть ключ»; после logout
   поздний ответ не возвращает evidence. Ключ отсутствует в URL/storage/cookies.
+- После `overview → alerts → detail` Back возвращает alerts, затем overview;
+  Forward снова открывает alerts/detail без повторного ключа. «Обновить» сохраняет
+  detail или страницу pagination. URL остаётся `/`; history state содержит только
+  число, без ID/evidence/ключа. После logout/pagehide Back/Forward не открывает evidence.
+- Favicon — встроенная прозрачная PNG (`img-src data:`); проверить отсутствие
+  запроса `/favicon.ico`, сетевых image requests и CSP warnings в новом документе.
 - 200% zoom и узкое окно читаемы. Не делиться screenshots с ключом/headers/evidence.
 
 Ограничения: logout очищает только эту вкладку; другие bearer copies действуют до
@@ -160,9 +171,11 @@ Timeout/Ctrl-C останавливает только эту pipeline; нет h
 ### Phase D — отдельная reliable monitor acceptance
 
 **Только после отдельного решения владельца об activation.** Начальный M2a soak
-завершён; ждать отложенного семидневного trial не требуется. Эти команды подготовлены
-для ручной приёмки и не выполнены при обновлении документации.
-Проверить, что следующие directories ещё не существуют;
+завершён; ждать отложенного семидневного trial не требуется. 2026-09-12 отдельная
+чистая серия завершена с PASS WITH KNOWN LIMITATIONS; [результаты и пути](M2C-ACCEPTANCE.md).
+Пути в примере ниже уже заняты evidence первоначальной попытки: команды не повторять
+с ними. Для нового запуска после соответствующего решения выбрать новые paths.
+Для выбранных новых paths проверить, что directories ещё не существуют, включая symlinks;
 не подставлять trial или demo directory. Если существуют — остановиться и выбрать
 новые имена после проверки, не удалять evidence.
 
@@ -181,9 +194,12 @@ baseline. Второй runtime проверяет restart/continuation по до
 потере cursor ожидается явный gap, не выдуманное восстановление истории. `view`
 между запусками только читает состояние. Даже runtime exit 0 требует проверки полей.
 
-Не ожидать детекции кратковременных изменений без inventory evidence. При storage/
-parser/access error сохранить fixed diagnostics, остановить acceptance; не исправлять
-permissions/migration/retention автоматически. После одной итерации процесс завершится;
+Не ожидать детекции кратковременных изменений без inventory evidence. Известный
+systemd_system partial/access_or_io принят владельцем как M2a coverage limitation;
+он сам по себе не новый defect и не причина остановить D. При новом/ухудшившемся
+access failure, storage/parser error, нарушении continuity/reconciliation или другом
+core defect сохранить fixed diagnostics и остановить acceptance; не исправлять
+permissions/migration/retention/core автоматически. После одной итерации процесс завершится;
 Ctrl-C останавливает только запущенный здесь runtime. Не использовать `sec disable`
 на trial. Сохранить новые state directories приватно; rollback host settings не нужен,
 поскольку команды их не меняют. Удаление evidence — отдельное ручное решение.
@@ -207,13 +223,22 @@ git diff --check
 Node нужен только optional synthetic JS DOM smoke, не runtime/installation dependency
 пакета. Python tests не запускают host collectors/providers/listener. HTTP parser
 проверяется in-memory connection, concurrency — disposable SQLite.
+UI follow-up 2026-09-12 добавляет synthetic history/popstate, pagination/refresh,
+проверку native submit markup + preventDefault, stale navigation/session/logout,
+точного CSP и валидной встроенной favicon. Это не исполнение Enter/default actions
+или CSP браузерным движком. Последующая ручная Phase B подтверждена владельцем;
+её результат отделён от synthetic tests в [итоге acceptance](M2C-ACCEPTANCE.md).
 Полный format check выявляет существовавшее до M2c форматирование `scripts/check_m0.py`
 и `tests/test_m0_safety.py`; unrelated файлы не переписываются. Все изменённые/new Python
 файлы M2c проходят отдельный format check. Type checker в проекте не настроен.
 
 ## Известные ограничения
 
-- Реальные browser layout/CSP/TCP и service/timer journal acceptance ещё открыты.
+- Phase B и service-часть Phase C подтверждены владельцем; timer events пока not observed.
+- Phase D подтвердила idle continuation; новые target journal events, cursor loss,
+  аварийные сценарии и длительная работа не проверены на host этой серией.
+- Принятые systemd_system partial/access_or_io и network context_missing сохраняются;
+  health=degraded не скрывается ради PASS acceptance.
 - Event hints только user systemd services/timers; никакого полного auth/security journal.
 - First anchor не backfill; rate-limit/drop до journal и частичная visibility не всегда
   доказуемы. Нет гарантии всей event history даже без обнаруженного gap.
