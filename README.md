@@ -25,6 +25,10 @@ hardening завершены; M2c принят: **PASS WITH KNOWN LIMITATIONS**.
 M3 начат: реализован synthetic Docker posture — adapter/result v1, отдельная SQLite,
 детекторы, dedup/drift и общий CLI/UI. Доступ к настоящему Docker daemon не подключён;
 real-host acquisition/acceptance и весь M3 ещё открыты.
+2026-09-13: подготовлен одноразовый `docker-acquire` (по умолчанию только preview).
+Первая попытка владельца завершилась отказом на version; найденная ошибка
+шаблона исправлена, повторная host acceptance открыта;
+[план и границы approval](docs/operations/M3-DOCKER-ACQUISITION.md).
 
 - [Roadmap: M2a watchdog → M2b AI → M2c надёжность/UI → M3 Docker](docs/ROADMAP.md).
 - [Архитектура, ежедневный цикл и данные](docs/architecture/overview.md).

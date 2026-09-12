@@ -141,3 +141,7 @@ partial/removals, repeat/restart, budgets/rollback и read-only CLI/API parity.
 Расширен настоящий UI DOM test: Docker screens/pagination/inert text/logout.
 Tests/demo не имеют host Docker acquisition и не вызывают daemon/collectors/inference.
 Main M2a/M2c schemas не мигрируются. [Контракт и открытая host acceptance](M3-DOCKER-POSTURE.md).
+
+2026-09-13: `test_docker_acquisition.py` проверяет подготовленную one-shot границу
+через fake runner и mocked process/OS interfaces. Preview не запускает Docker;
+никакой testcase не обращается к host socket. [План первого capture](M3-DOCKER-ACQUISITION.md).

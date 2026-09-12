@@ -189,6 +189,22 @@ PROJECTION = {
 }
 
 
+def project_record(item: dict, *, deadline: float, clock=time.monotonic) -> dict:
+    """Shared pure projection; callers supply provenance separately from the record."""
+    projected = dict.fromkeys(FIELDS)
+    for field, (keys, convert) in PROJECTION.items():
+        if clock() > deadline:
+            raise TimeoutError("docker_projection_timeout")
+        try:
+            value = item
+            for part in keys:
+                value = value[part]
+            projected[field] = convert(value)
+        except (ValueError, TypeError, KeyError, OverflowError):
+            pass
+    return projected
+
+
 def parse_synthetic(
     raw: bytes, source_id: str, collected_at: str, *, clock=time.monotonic
 ) -> Result:
@@ -215,19 +231,14 @@ def parse_synthetic(
             key = item["Id"]
             require(key not in seen)
             seen.add(key)
-            projected = dict.fromkeys(FIELDS)
-            for field, (keys, convert) in PROJECTION.items():
-                if clock() > deadline:
-                    return Result(
-                        source_id, at, "partial" if output else "unavailable", "timeout", output
-                    ).validate()
-                try:
-                    value = item
-                    for part in keys:
-                        value = value[part]
-                    projected[field] = convert(value)
-                except (ValueError, TypeError, KeyError, OverflowError):
-                    reason = "incomplete"
+            try:
+                projected = project_record(item, deadline=deadline, clock=clock)
+            except TimeoutError:
+                return Result(
+                    source_id, at, "partial" if output else "unavailable", "timeout", output
+                ).validate()
+            if any(value is None for value in projected.values()):
+                reason = "incomplete"
             output[key] = projected
         return Result(
             source_id, at, "ok" if reason == "none" else "partial", reason, output

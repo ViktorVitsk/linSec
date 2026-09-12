@@ -85,6 +85,13 @@ def parser() -> argparse.ArgumentParser:
     reliable.add_argument("--iterations", type=int, default=0)
     commands.add_parser("m2c-demo", help="Только synthetic data в новом изолированном каталоге")
     commands.add_parser("docker-demo", help="M3: synthetic Docker posture; без daemon")
+    acquire = commands.add_parser(
+        "docker-acquire", help="M3: preview; одноразовое чтение daemon только с --approve"
+    )
+    acquire.add_argument("--output", type=Path, required=True)
+    acquire.add_argument(
+        "--approve", help="Токен точного plan; разрешает единственный real-host capture"
+    )
     docker_view = commands.add_parser("docker-view", help="M3: read-only synthetic Docker evidence")
     docker_view.add_argument("id", type=int, nargs="?")
     docker_view.add_argument("--docker-state", type=Path, required=True)
@@ -139,6 +146,14 @@ def main(argv: list[str] | None = None) -> int:
 
             emit(docker_replay(args.state / "synthetic-docker"))
             return 0
+        if args.command == "docker-acquire":
+            from .docker_posture.acquisition import plan, run
+
+            result = (
+                run(args.output, args.approve) if args.approve is not None else plan(args.output)
+            )
+            emit(result)
+            return 0 if result.get("status", "ok") == "ok" else 2
         if args.command == "docker-view":
             from .docker_posture.service import PostureQueries
 

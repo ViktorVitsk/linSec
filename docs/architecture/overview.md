@@ -49,9 +49,14 @@ Config M2a v1/fingerprint не меняются; AI settings имеют отде
 
 M3: `adapters/docker.py` — чистая проекция встроенных synthetic fixtures;
 `docker_posture/` — contract, rules, отдельная SQLite v1 и общие queries.
-Host acquisition, принятие baseline, scheduled monitoring и AI export для Docker
-не реализованы. `sec docker-demo` создаёт новый synthetic state; `docker-view` и
+В synthetic контур не включены host acquisition, принятие baseline, scheduled
+monitoring и AI export для Docker. `sec docker-demo` создаёт новый synthetic state; `docker-view` и
 UI читают его. Main SOURCES/config/DB и reliability schema не меняются.
+
+Дополнение 2026-09-13: host acquisition подготовлен как отдельная одноразовая
+операция `docker-acquire` с preview/exact approval, без auto-import/monitor/UI call.
+Первая попытка владельца остановилась на version; ошибка шаблона исправлена,
+host acceptance ещё открыта; [ADR-006](../decisions/ADR-006-m3-one-shot-acquisition.md).
 
 Не создавать отдельный сервис на каждый модуль, event bus, vector database,
 динамическую загрузку plugins или универсальный agent framework без необходимости.

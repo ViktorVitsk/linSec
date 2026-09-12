@@ -45,6 +45,10 @@ multi-tenant и SaaS сейчас не посвящаем отдельную а�
   [Контракт, демонстрация и ограничения](operations/M3-DOCKER-POSTURE.md),
   [граница доступа](decisions/ADR-005-m3-synthetic-docker-posture.md).
   Real-host acquisition/acceptance, worker isolation и scanners открыты; M3 целиком не закрыт.
+  2026-09-13: подготовлен opt-in одноразовый `docker-acquire` с plan/approval,
+  минимизированным отдельным capture и mock acceptance. Первая согласованная
+  попытка владельца остановилась на version; ошибка шаблона исправлена, повторная
+  host acceptance открыта. [Процедура](operations/M3-DOCKER-ACQUISITION.md).
 
 Уточнение 2026-09-11 перед M2b: [границы доверия](architecture/trust-boundaries.md).
 Исправлены C1/DEL terminal escaping, проверка сохранённого evidence и лимит partial

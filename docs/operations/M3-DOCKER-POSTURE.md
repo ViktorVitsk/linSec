@@ -7,6 +7,10 @@ Real-host acquisition, реальная Docker acceptance и browser acceptance 
 экрана остаются открытыми. M3 целиком не закрыт. Scanners идут отдельным increment.
 [Решение](../decisions/ADR-005-m3-synthetic-docker-posture.md).
 
+Дополнение 2026-09-13: подготовлен отдельный одноразовый collector с exact-plan
+approval. Его capture не импортируется в synthetic DB и не превращает её в host
+evidence. [Процедура real-host acquisition](M3-DOCKER-ACQUISITION.md).
+
 ## Что работает
 
 Чистый adapter принимает bounded synthetic inspect-shaped envelope, минимизирует
