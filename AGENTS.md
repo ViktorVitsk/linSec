@@ -5,7 +5,7 @@
 - Build a useful personal Linux security monitor that teaches through real evidence.
 - SECURITY > RELIABILITY > UNDERSTANDABILITY > SIMPLICITY > AUTOMATION > FEATURES.
 - Follow the accepted [roadmap](docs/ROADMAP.md); finish one useful increment at a time.
-- M0/M1 are closed in their agreed scope. M2a foreground runtime exists; host validation and the seven-day trial remain open.
+- Current milestone status and acceptance gates are maintained in the roadmap; do not infer them from older plans.
 - Linux first; keep the core portable. No Windows sensors, SaaS, SIEM or distributed stack now.
 
 ## Safety boundaries — always apply
@@ -23,7 +23,7 @@
   Minimize/redact evidence; read metadata rather than sensitive contents.
 - Use reviewed fixed argv, validated parameters, shell=False, timeouts and runtime output bounds.
   No eval/exec/shell=True for untrusted/generated code; no remote script piped into shell.
-- Host remediation is disabled. AI has no arbitrary shell/SQL/path/URL or privileged tools.
+- Host remediation is disabled. The application's embedded LLM has no arbitrary shell/SQL/path/URL or privileged tools.
   Preserve detection with LLM_ENABLED=false; cloud needs explicit request, preview and budget.
 - Baseline updates require reviewed diff and audit; no automatic absorption of changes.
   Trust/suppression must be narrow, removable and distinct from closing an alert.
@@ -37,7 +37,9 @@
 - Python 3.13, uv project environment, uv-managed lockfile; never modify system/user Python.
 - Keep dependencies minimal and locked. Use mature static/scanning tools, not homemade replacements.
 - Use synthetic tests; do not run attack samples or modify host settings to prove a detector.
-- Run hygiene, unittest, Ruff and relevant lock checks. Explain gaps; never invent test results.
+- For code/config changes, run applicable checks from the development workflow.
+  For documentation-only changes, check text, links and diff; check the lock when dependencies change.
+  Repeat successful checks only after relevant changes or new failures. Explain gaps; never invent results.
 - Follow [architecture](docs/architecture/overview.md) and [AI contract](docs/architecture/llm-security.md).
   OS details stay in adapters; CLI/UI share application operations, not duplicated business logic.
 - Russian user-facing docs, English code identifiers/comments. Explain important findings briefly.
