@@ -1,5 +1,10 @@
 # Детекторы M3 Docker posture v1
 
+Пересмотр 2026-09-13: по [ADR-007](../decisions/ADR-007-reuse-first-orchestrator.md)
+synthetic DB/UI и drift/add/remove rules удалены. Описания этих частей ниже —
+исторические. Оставшиеся posture rules используются только ограниченным offline
+review и его synthetic tests; новую библиотеку Docker checks не развиваем.
+
 Дата: 2026-09-12, обновление 2026-09-13. Источник в DB/UI: synthetic inspect-shaped
 envelope. Отдельный offline `docker-review --details` применяет те же posture rules
 к проверенному minimized host capture; DB/UI host coverage пока отсутствует.

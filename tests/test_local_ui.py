@@ -66,6 +66,14 @@ class UITests(unittest.TestCase):
         self.access.expires = 0
         self.assertEqual(401, self.request()[0])
 
+    def test_retired_docker_routes_do_not_read_evidence(self):
+        with patch(
+            "security_orchestrator.queries.bounded_reader",
+            side_effect=AssertionError("retired route accessed evidence"),
+        ):
+            for path in ("/api/docker?limit=25", "/api/docker/1"):
+                self.assertEqual(404, self.request(path)[0])
+
     def test_new_token_invalidates_previous_process_credential(self):
         restarted = Access("b" * 48, AUTHORITY)
         self.assertFalse(restarted.authenticated("Bearer " + SYNTHETIC_KEY))

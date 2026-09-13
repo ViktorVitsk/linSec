@@ -2,6 +2,13 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
+Пересмотр 2026-09-13: текущая целевая архитектура и порядок сокращения —
+[ADR-007](../decisions/ADR-007-reuse-first-orchestrator.md).
+Описанная ниже M2/M3 архитектура фиксирует историю реализации. Synthetic Docker
+store/demo/UI удалены; расширение journal workflow, dashboard и Docker monitoring
+приостановлено. Сохраняем evidence/policy; новые collectors/scanners сначала
+интегрируем из зрелых инструментов. Миграции M2a/M2c databases не выполнялись.
+
 Дата решения: 2026-09-10, обновление 2026-09-13.
 Статус: **M2a foreground runtime, отдельный M2b и opt-in M2c реализованы**.
 Начальный M2a soak завершён, monitor остановлен владельцем 2026-09-12; полный
@@ -22,7 +29,7 @@ M3 начат отдельным synthetic Docker posture: result/adapter, SQLit
 вручную проверить вывод и научиться безопасно управлять машиной.
 Измерять полезность разбором реальных событий, шумом и покрытием, а не числом сенсоров.
 
-Приоритеты: SECURITY > RELIABILITY > UNDERSTANDABILITY > SIMPLICITY > AUTOMATION > FEATURES.
+Приоритеты: SECURITY > RELIABILITY > SIMPLICITY > REUSE OF MATURE TOOLS > UNDERSTANDABILITY > AUTOMATION > FEATURES.
 Коммерческий сервис, multi-tenant управление и распределённая инфраструктура сейчас
 не определяют архитектуру. Возможное будущее переиспользование — через переносимое ядро.
 

@@ -3,10 +3,20 @@
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
 Личный Linux security monitor: замечать важные изменения, понимать доказательства
-и учиться безопасности на реальных событиях. **Безопасность → надёжность → понятность
-→ простота → автоматизация → функции.**
+и учиться безопасности на реальных событиях. **Безопасность → надёжность → простота
+→ повторное использование зрелых инструментов → понятность → автоматизация → функции.**
 
 ## Состояние на 2026-09-13
+
+После независимого аудита принят [переход к минимальному orchestrator](docs/decisions/ADR-007-reuse-first-orchestrator.md).
+Собственная ценность — evidence/policy, reviewed baseline, исключения и privacy.
+Новые collectors/scanners сначала искать среди готовых инструментов. Удалены
+synthetic Docker SQLite/demo/drift и экран: `docker-demo`, `docker-view`,
+`ui --docker-state` больше не поддерживаются. `docker-review` и прежние captures
+сохранены. Развитие M3 monitoring, journal workflow и dashboard приостановлено;
+M2a/M2b и legacy M2c команды сохраняются. Новые инструменты пока не установлены.
+
+Ниже — история реализации до аудита; она не задаёт следующий шаг разработки.
 
 **M0/M1 завершены в согласованном scope. Реализован foreground runtime M2a:**
 устанавливаемый `sec`, Linux collectors, SQLite, baseline/diff, история, предупреждения
@@ -36,7 +46,7 @@ Docker 29.1.3, три остановленных контейнера, status ok
 для ручной приёмки. Команда не вызывает Docker и не
 заменяет human acceptance; [применение](docs/operations/M3-DOCKER-ACQUISITION.md#локальная-проверка-сохранённого-capture).
 
-- [Roadmap: M2a watchdog → M2b AI → M2c надёжность/UI → M3 Docker](docs/ROADMAP.md).
+- [Новый порядок работ и история roadmap](docs/ROADMAP.md).
 - [Архитектура, ежедневный цикл и данные](docs/architecture/overview.md).
 - [AI-расследователь и замена моделей](docs/architecture/llm-security.md).
 - [Разработка, проверки и границы CI](docs/operations/development.md).
@@ -44,7 +54,7 @@ Docker 29.1.3, три остановленных контейнера, status ok
 - [Запуск M2a, CLI и приёмка](docs/operations/M2A-WATCHDOG.md).
 - [M2b: privacy preview, расследование и local benchmark](docs/operations/M2B-INVESTIGATION.md).
 - [Детекторы и ручная проверка](docs/detections/M2A-WATCHDOG.md).
-- [M3: synthetic Docker posture, запуск и границы](docs/operations/M3-DOCKER-POSTURE.md).
+- [Архив M3: прежний synthetic этап и его границы](docs/operations/M3-DOCKER-POSTURE.md).
 - [Trust boundaries: watchdog, hostile evidence и coding agent](docs/architecture/trust-boundaries.md).
 
 ## Попробовать безопасный пример
@@ -99,9 +109,10 @@ CI настроен на GitHub-hosted runner; локальные тесты н�
 
 ## Ближайшая польза
 
-Следующий шаг M3 — согласовать минимизированный real-host acquisition и проверить
-Docker posture на фактическом Engine. Synthetic contract/adapter/CLI/UI уже реализованы;
-[границы и приёмка](docs/operations/M3-DOCKER-POSTURE.md).
+Следующий increment — небольшой adapter к готовому secret scanner для выбранного
+repository; затем ограниченный osquery pilot вместо расширения Linux parsers.
+[Выбор инструментов, ограничения и стоимость миграции](docs/decisions/ADR-007-reuse-first-orchestrator.md).
+Не повторять M3 capture или дописывать собственные Docker checks автоматически.
 Полный семидневный operational trial пройдёт позже на существенно более полном runtime;
 исходный soak не подтверждает многодневную стабильность. Реальная M2b provider/model
 acceptance также остаётся отдельной задачей. В M2a нет облачных запросов и host remediation;

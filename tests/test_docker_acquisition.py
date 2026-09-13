@@ -19,7 +19,7 @@ from security_orchestrator.adapters import docker_acquire as adapter
 from security_orchestrator.cli import main
 from security_orchestrator.docker_posture.acquisition import plan, run
 from security_orchestrator.docker_posture.review import read_capture, review, validate
-from security_orchestrator.docker_posture.scenarios import CONTAINER, container
+from docker_fixtures import CONTAINER, container
 from security_orchestrator.model import InvalidInput, digest, encode
 
 VERSION = {"version": "28.3.3", "api": "1.51", "min_api": "1.24", "os": "linux"}

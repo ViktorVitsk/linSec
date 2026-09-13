@@ -2,6 +2,10 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
+[Publication redaction: private workstation observation/configuration omitted.]
+
+
+
 Дата: 2026-09-13. Статус: **первый успешный real-host capture и offline review выполнены**.
 Шаблоны работают на наблюдаемом Engine; полная host acceptance остаётся открытой.
 История отказов и границы подтверждения сохранены ниже.

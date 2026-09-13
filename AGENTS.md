@@ -3,8 +3,12 @@
 ## Mission and scope
 
 - Build a useful personal Linux security monitor that teaches through real evidence.
-- SECURITY > RELIABILITY > UNDERSTANDABILITY > SIMPLICITY > AUTOMATION > FEATURES.
+- SECURITY > RELIABILITY > SIMPLICITY > REUSE OF MATURE TOOLS > UNDERSTANDABILITY > AUTOMATION > FEATURES.
 - Follow the accepted [roadmap](docs/ROADMAP.md); finish one useful increment at a time.
+- Before any new component, check whether a maintained mature open-source tool already
+  solves it. Prefer the tool, then a small adapter, then justified custom policy/UX.
+  Follow [ADR-007](docs/decisions/ADR-007-reuse-first-orchestrator.md); do not resume
+  superseded M3 acceptance or expand frozen journal/UI/scanner subsystems automatically.
 - Current milestone status and acceptance gates are maintained in the roadmap; do not infer them from older plans.
 - Linux first; keep the core portable. No Windows sensors, SaaS, SIEM or distributed stack now.
 

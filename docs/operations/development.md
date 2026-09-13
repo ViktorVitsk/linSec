@@ -143,6 +143,14 @@ package inspection; [точные результаты и ограничения
 
 ## M3 synthetic validation
 
+Пересмотр 2026-09-13: [ADR-007](../decisions/ADR-007-reuse-first-orchestrator.md)
+удаляет synthetic store/replay и Docker UI/API. Ниже — история прежнего scope.
+Теперь `test_docker_posture.py` проверяет оставшуюся projection/posture логику,
+`test_docker_acquisition.py` — capture boundary и offline review; общие фикстуры
+живут в `tests/docker_fixtures.py`. Store/drift/demo tests удалены вместе с feature.
+DOM suite сохраняет M2c coverage; API regression проверяет отказ retired Docker
+routes до чтения evidence. Новую host acceptance старого M3 не проводить.
+
 `test_docker_posture.py` проверяет pure adapter, минимизацию, posture/drift,
 partial/removals, repeat/restart, budgets/rollback и read-only CLI/API parity.
 Расширен настоящий UI DOM test: Docker screens/pagination/inert text/logout.

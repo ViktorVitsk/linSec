@@ -10,7 +10,7 @@ class Element {
   insertAdjacentHTML() { throw new Error('HTML injection sink used'); }
   get allText() { return this.textContent + this.children.map(x=>x.allText).join(' '); }
 }
-const ids=['token','overview','alerts','detail','error','updated','workspace','login','logout','connect','key-form','overview-button','alerts-button','docker-button','docker','docker-detail','refresh'];
+const ids=['token','overview','alerts','detail','error','updated','workspace','login','logout','connect','key-form','overview-button','alerts-button','refresh'];
 const elements=Object.fromEntries(ids.map(id=>[id,new Element('section')]));
 global.document={getElementById:id=>elements[id],createElement:tag=>new Element(tag)};
 const windowEvents={};
@@ -52,14 +52,12 @@ const hostile='<img onerror=alert(1)><svg onload=alert(1)></svg></pre>&lt;script
 const calls=[];
 global.fetch=async (path, options)=>{
   calls.push({path,options});
-  assert.match(path,/^\/api\/(?:overview|(?:alerts|docker)(?:\?limit=25(?:&before=[1-9][0-9]*)?|\/[1-9][0-9]*))$/);
+  assert.match(path,/^\/api\/(?:overview|alerts(?:\?limit=25(?:&before=[1-9][0-9]*)?|\/[1-9][0-9]*))$/);
   assert.equal(options.credentials,'omit');
   assert.equal(options.cache,'no-store');
   assert.equal(options.redirect,'error');
   assert.equal(options.headers['X-Sec-UI'],'1');
   if(path==='/api/overview')return {ok:true,json:async()=>({monitor:'running',disabled:false,active_alerts:1,pending_notifications:1,baseline_revision:0,storage_bytes:12345,health:'degraded',sources:[{source:'systemd_user',status:'partial',reasons:['partial'],at:'2026-09-11'}],reliability:{state:'cursor_lost',gap_count:1,stale:true,storage_failure:false,history_recovered:false},application_version:'0.1.0',database_version:2})};
-  if(path.startsWith('/api/docker?'))return {ok:true,json:async()=>({state:'partial',reason:'incomplete',at:'2026-09-12',stale:true,storage_failure:true,items:[{id:1,severity:'high',summary:hostile,rule:'privileged',state:'unknown',at:'2026-09-12'}],next_before:path.includes('&before=')?null:1})};
-  if(path.startsWith('/api/docker/'))return {ok:true,json:async()=>({origin:'synthetic',host_validated:false,summary:hostile,manual_check:'Manual',limitations:'Coverage unknown',after:{privileged:true}})};
   if(path.startsWith('/api/alerts?'))return {ok:true,json:async()=>({items:[{id:1,severity:'high',summary:hostile,source:'accounts',status:'open',active:true,at:'2026-09-11'}],next_before:path.includes('&before=')?null:1})};
   return {ok:true,json:async()=>({evidence:{alert:{record:hostile},source_coverage:{status:'partial'}},deterministic:{detector:{severity:'high',detector_id:'uid0-drift',source:'accounts'},summary:'Drift',guidance:{mechanism:hostile,importance:'important',manual_check:'sec explain 1',limits:'unknown'}},saved_investigation:{mode:'deterministic',entries:[{at:'2026-09-11',kind:'fallback',code:'llm_disabled'}],step_count:0,stop_reason:'llm_disabled',budgets:[]}})};
 };
@@ -167,23 +165,6 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
   assert.equal(elements.workspace.hidden,true);
   assert.equal(elements.detail.children.length,0);
   global.fetch=normalFetch;
-  elements.token.value='synthetic-final-key';
-  await submitKey();
-  await elements['docker-button'].listeners.click();
-  assert.match(elements.docker.allText,/не описывают текущий хост/);
-  assert.match(elements.docker.allText,/Это не PASS/);
-  assert.ok(elements.docker.allText.includes(hostile));
-  const dockerRow=elements.docker.children.find(el=>el.className==='alert-row');
-  await dockerRow.children.find(el=>el.tagName==='button').listeners.click();
-  assert.ok(elements['docker-detail'].allText.includes(hostile));
-  assert.match(elements['docker-detail'].allText,/Автоматических действий нет/);
-  await history.go(-1);
-  const nextDocker=elements.docker.children.find(el=>el.tagName==='button');
-  await nextDocker.listeners.click();
-  assert.equal(calls.at(-1).path,'/api/docker?limit=25&before=1');
-  elements.logout.listeners.click();
-  assert.equal(elements.docker.children.length,0);
-  assert.equal(elements['docker-detail'].children.length,0);
   elements.token.value='synthetic-final-key';
   await submitKey();
   // Unrecognized history state is never interpreted as a URL, ID or credential.

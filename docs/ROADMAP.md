@@ -2,12 +2,34 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
-Дата обновления: 2026-09-13. Статус: **актуальный согласованный порядок разработки**.
-Заменяет прежнюю последовательность M2 → M3 → M4 AI → M5 UX из исходного AGENTS.
+Дата обновления: 2026-09-13. Статус: **пересмотрен по запросу владельца — reuse first**.
+Прежняя последовательность M2/M3 ниже сохраняется как история, а не автоматический план.
 Цель — личный рабочий инструмент и обучение через реальные события. Компаниям,
 multi-tenant и SaaS сейчас не посвящаем отдельную архитектуру.
 
-## Состояние и граница текущего increment
+## Текущий порядок
+
+Решение, классификация всех компонентов и источники — [ADR-007](decisions/ADR-007-reuse-first-orchestrator.md).
+Приоритеты: SECURITY > RELIABILITY > SIMPLICITY > REUSE OF MATURE TOOLS >
+UNDERSTANDABILITY > AUTOMATION > FEATURES.
+
+1. Аудит и удаление лишнего synthetic Docker subsystem. Реальные captures и
+   offline review сохранить; host acceptance прежнего M3 не продолжать.
+2. Подключить готовый secret scanner небольшим adapter для выбранного repository.
+   Сначала pin/provenance, redaction и coverage, затем отчёт; не собственный detector.
+3. Коротко проверить osquery для замены network/accounts parsers. Не добавлять
+   второй daemon и не считать его systemd table эквивалентом всех unit-файлов.
+4. При возвращении ежедневной эксплуатации — один systemd user timer/oneshot,
+   согласованная установка и проверка kill switch; затем удалить дубли scheduling.
+5. По реальной потребности — один Trivy **или** Grype adapter; отдельный Lynis audit.
+
+Journal workflow, новый dashboard, Docker monitoring, scanners сверх выбранного
+scope, generic rules/agents/CTI остаются DEFER. M2a SQLite, reviewed baseline,
+provenance/partial, narrow exceptions, privacy и LLM-off сохраняются. Код legacy
+M2c доступен, но не развивается автоматически. Host settings и installation
+требуют прежнего approval; roadmap не является таким разрешением.
+
+## История состояния до архитектурного пересмотра
 
 - M0: завершён; найденная regression Python исправлена подготовкой перед M2.
 - M1: завершён в согласованном scope; решения и ограничения — в

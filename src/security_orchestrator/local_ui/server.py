@@ -124,13 +124,6 @@ class Routes:
                 return error(400)
             if parsed.path == "/api/overview" and not params:
                 payload = self.queries.overview()
-            elif parsed.path == "/api/docker" and params.keys() <= {"limit", "before"}:
-                payload = self.queries.docker_overview(
-                    int(params.get("limit", ["25"])[0]),
-                    int(params.get("before", [str(2**63 - 1)])[0]),
-                )
-            elif re.fullmatch(r"/api/docker/[1-9][0-9]{0,9}", parsed.path) and not params:
-                payload = self.queries.docker_detail(int(parsed.path.rsplit("/", 1)[1]))
             elif parsed.path == "/api/alerts" and params.keys() <= {"limit", "before"}:
                 payload = self.queries.alerts(
                     int(params.get("limit", ["25"])[0]),

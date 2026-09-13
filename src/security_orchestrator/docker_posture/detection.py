@@ -2,9 +2,6 @@
 
 import ipaddress
 
-from ..model import digest
-from .contracts import FIELDS
-
 RULES = {
     "publication": (
         "medium",
@@ -32,15 +29,6 @@ RULES = {
         "Пользователь контейнера по умолчанию или явно root. Это не доказывает UID 0 на хосте: user namespaces/rootless здесь не проверены.",
     ),
     "unknown_user": ("info", "Указано имя пользователя; его UID внутри image неизвестен."),
-    "configuration_drift": (
-        "medium",
-        "Изменились наблюдаемые поля конфигурации относительно последнего полного наблюдения объекта. Это не изменение принятого baseline.",
-    ),
-    "container_added": ("info", "Контейнер впервые наблюдался в этой synthetic серии."),
-    "container_removed": (
-        "info",
-        "Контейнер отсутствует в заявленном полном inventory той же synthetic серии.",
-    ),
 }
 
 
@@ -73,16 +61,3 @@ def posture(item: dict) -> list[tuple[str, dict]]:
     elif item["user"] == "named_unknown":
         found.append(("unknown_user", {"user": item["user"]}))
     return found
-
-
-def drift(before: dict, after: dict) -> list[str]:
-    # Running/observed mappings are runtime state; keep them out of configuration drift.
-    return sorted(
-        k
-        for k in FIELDS - {"running", "observed_ports"}
-        if before[k] is not None and after[k] is not None and before[k] != after[k]
-    )
-
-
-def context(source, key, rule, evidence):
-    return digest([1, source, key, rule, evidence])

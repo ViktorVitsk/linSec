@@ -2,6 +2,12 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
+**Архив с 2026-09-13.** По [ADR-007](../decisions/ADR-007-reuse-first-orchestrator.md)
+удалены synthetic store/demo/drift, `docker-demo`, `docker-view`, `ui --docker-state`
+и Docker UI/API. Команды ниже относятся к Git `2046f65` и не поддерживаются текущей
+поставкой. Fixtures перенесены в tests; старые evidence не удалялись. Offline
+`docker-review` сохранён. Этот документ не является планом продолжить host acceptance.
+
 Дата: 2026-09-12. Статус: **synthetic этап реализован**.
 Real-host acquisition, реальная Docker acceptance и browser acceptance нового
 экрана остаются открытыми. M3 целиком не закрыт. Scanners идут отдельным increment.
