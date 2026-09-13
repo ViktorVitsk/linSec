@@ -44,14 +44,17 @@ multi-tenant и SaaS сейчас не посвящаем отдельную а�
   отдельная SQLite v1, deterministic findings/drift/dedup и общий CLI/UI.
   [Контракт, демонстрация и ограничения](operations/M3-DOCKER-POSTURE.md),
   [граница доступа](decisions/ADR-005-m3-synthetic-docker-posture.md).
-  Real-host acquisition/acceptance, worker isolation и scanners открыты; M3 целиком не закрыт.
+  Полная host acceptance, worker isolation и scanners открыты; M3 целиком не закрыт.
   2026-09-13: подготовлен opt-in одноразовый `docker-acquire` с plan/approval,
   минимизированным отдельным capture и mock acceptance. Первая согласованная
   попытка владельца остановилась на version; ошибка шаблона исправлена, повторная
   host acceptance открыта. [Процедура](operations/M3-DOCKER-ACQUISITION.md).
   Добавлен offline `docker-review`: SHA-256/schema/completeness и агрегированная
   posture-сводка сохранённого capture без daemon/импорта; проверен synthetic tests.
-  Владелец подтвердил 2026-09-13, что повторный capture ещё не запускался.
+  После явного разрешения владельца 2026-09-13 выполнен первый успешный host capture
+  на Docker 29.1.3: 3 stopped containers, status ok; offline review PASS. Попытка r2
+  остановилась до Docker из-за отображения UID socket в sandbox; r3 выполнен через
+  штатное разрешение вне sandbox без sudo. [Evidence и открытые пункты](operations/M3-DOCKER-ACQUISITION.md#первый-успешный-capture-и-граница-подтверждения).
 
 Уточнение 2026-09-11 перед M2b: [границы доверия](architecture/trust-boundaries.md).
 Исправлены C1/DEL terminal escaping, проверка сохранённого evidence и лимит partial
@@ -61,8 +64,8 @@ LLM export/action boundary относится к M2b, Docker/worker isolation �
 
 Текущая поставка — M2a, отдельный M2b и M2c с принятой bounded host/browser acceptance.
 Добавлен отдельный synthetic этап M3 и подготовлены одноразовый capture/offline review.
-Следующий шаг — согласовать повторный real-host acquisition после исправления version
-и проверить его через `docker-review` и human acceptance первого Docker posture increment;
+Первый real-host acquisition и `docker-review` прошли. Следующий шаг — human review
+конфигурации/findings и оставшиеся измерения/acceptance первого Docker posture increment;
 [границы поставки ниже](#m3--docker-и-developer-security). История начального M2a soak
 сохраняется отдельно; будущие AI/M2c результаты не смешиваются с его метриками. [Совместимость без изменения M2a contracts](decisions/ADR-003-m2b-investigation-boundary.md).
 Следующий шаг M2b — сравнительный local benchmark и human review после отдельного

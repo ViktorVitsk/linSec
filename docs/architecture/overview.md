@@ -2,7 +2,7 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
-Дата решения: 2026-09-10, обновление 2026-09-12.
+Дата решения: 2026-09-10, обновление 2026-09-13.
 Статус: **M2a foreground runtime, отдельный M2b и opt-in M2c реализованы**.
 Начальный M2a soak завершён, monitor остановлен владельцем 2026-09-12; полный
 семидневный trial перенесён на integration/release-candidate stage и не блокирует M2c.
@@ -10,7 +10,8 @@
 остаётся открытой. M2c принят с известными ограничениями;
 [итог host/browser acceptance](../operations/M2C-ACCEPTANCE.md).
 M3 начат отдельным synthetic Docker posture: result/adapter, SQLite и общий CLI/UI.
-Real-host acquisition и acceptance открыты; [ADR-005](../decisions/ADR-005-m3-synthetic-docker-posture.md).
+Первый отдельный real-host capture прошёл; полная acceptance и импорт в DB/UI открыты;
+[ADR-005](../decisions/ADR-005-m3-synthetic-docker-posture.md).
 Порядок работ — [roadmap](../ROADMAP.md). Обоснование стека —
 [ADR-001](../decisions/ADR-001-local-modular-core.md).
 
@@ -55,8 +56,9 @@ UI читают его. Main SOURCES/config/DB и reliability schema не мен
 
 Дополнение 2026-09-13: host acquisition подготовлен как отдельная одноразовая
 операция `docker-acquire` с preview/exact approval, без auto-import/monitor/UI call.
-Первая попытка владельца остановилась на version; ошибка шаблона исправлена,
-host acceptance ещё открыта; [ADR-006](../decisions/ADR-006-m3-one-shot-acquisition.md).
+После исправления version выполнен первый согласованный capture на Engine 29.1.3
+и offline `docker-review`; полная host acceptance ещё открыта.
+[ADR-006](../decisions/ADR-006-m3-one-shot-acquisition.md).
 
 Не создавать отдельный сервис на каждый модуль, event bus, vector database,
 динамическую загрузку plugins или универсальный agent framework без необходимости.

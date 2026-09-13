@@ -2,9 +2,10 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
-Дата: 2026-09-13. Статус: **первая попытка владельца завершилась отказом на version;
-шаблон исправлен, повторная host acceptance открыта**. Coding agent сам Docker
-не вызывал. [ADR-006](../decisions/ADR-006-m3-one-shot-acquisition.md).
+Дата: 2026-09-13. Статус: **первый успешный real-host capture и offline review выполнены**.
+Шаблоны работают на наблюдаемом Engine; полная host acceptance остаётся открытой.
+История отказов и границы подтверждения сохранены ниже.
+[ADR-006](../decisions/ADR-006-m3-one-shot-acquisition.md).
 
 ## Назначение и изменения
 
@@ -185,3 +186,40 @@ hostile schema, size/depth limits и отказ для небезопасных 
 Результаты этой доработки 2026-09-13: **245 unittest PASS**, в том числе 23 acquisition/
 review tests; Ruff, repository hygiene, UI DOM test и diff check — PASS. Зависимости
 не менялись. Эти результаты не закрывают повторную host acceptance.
+
+## Первый успешный capture и граница подтверждения
+
+2026-09-13 владелец явно разрешил подготовленный одноразовый capture. Первая
+попытка coding agent в sandbox, `runtime/m3-host-20260913-r2`, завершилась
+`unavailable/socket_metadata_refused`, `last_failed_step=socket_before`: Docker CLI
+ещё не запускался. SHA-256 файла отказа:
+`139145e00108528fc816f159dad13fb8044d51bc03351822b47b1156d2849b42`.
+`docker-review` подтвердил `artifact_valid=true`, exit 2 из-за unavailable.
+
+[Publication redaction: private workstation observation/configuration omitted.]
+
+
+
+Для повтора сформирован новый preview с каталогом `runtime/m3-host-20260913-r3`;
+код, endpoint, API и лимиты не менялись. Повтор той же согласованной операции
+выполнен через штатный `require_escalated`, без sudo и без root coding-agent session.
+Оба предыдущих artifacts сохранены. Успешный capture:
+
+[Publication redaction: private workstation observation/configuration omitted.]
+
+
+
+[Publication redaction: private workstation observation/configuration omitted.]
+
+
+
+Findings относятся к сохранённой конфигурации остановленных containers. Сбор не
+доказывает WAN reachability или компрометацию; M1 prerequisites перед запуском
+сохраняются. Containers, daemon, services, groups/socket/firewall и baseline не менялись.
+Host rollback не требуется; новые каталоги остаются локальными evidence для review.
+
+Подтверждено выполнение templates/минимизации на этом Engine и успешная проверка
+отдельного capture. Открыты human review ожидаемой конфигурации/полезности findings,
+отдельные CPU/RAM измерения, repeated/partial/error acceptance на хосте и worker
+isolation. Импорт host evidence в DB/UI и monitoring требуют отдельного increment;
+synthetic databases и текущие M2a/M2c contracts не менялись. M3 целиком не закрыт.

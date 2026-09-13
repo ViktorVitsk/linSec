@@ -1,8 +1,9 @@
 # ADR-006 — M3: подготовленный одноразовый Docker capture
 
-Дата: 2026-09-13. Статус: **код подготовлен и проверен без Docker**;
-владелец выполнил первый согласованный запуск, получив отказ на version; шаблон
-исправлен, host acceptance ещё открыта. [Evidence попытки](../operations/M3-DOCKER-ACQUISITION.md#первая-попытка-владельца-и-исправление).
+Дата: 2026-09-13. Статус: **первый согласованный host capture и offline review прошли**;
+после исправления version подтверждён один capture на Engine 29.1.3. Полная host
+acceptance и worker isolation ещё открыты.
+[История и пределы подтверждения](../operations/M3-DOCKER-ACQUISITION.md#первый-успешный-capture-и-граница-подтверждения).
 
 ## Контекст
 
@@ -67,9 +68,10 @@ Shared parser принимает только выбранный bounded stdout;
 Mocked acceptance проверяет fixed argv/environment, отсутствие вызовов при preview
 и неверном token, root/existing-dir refusal, minimization, partial/races, socket
 replacement, version refusal и bounds stdout/stderr/owned-child cleanup.
-Фактические Go templates, установленный CLI/Engine, права socket, нагрузка и
-реальный capture ещё не подтверждены. Ошибка несовместимости не разрешает менять
-API version или транспорт автоматически.
+Первый успешный host capture подтвердил templates на наблюдаемом Engine 29.1.3;
+metadata host socket проверены отдельно от sandbox-отображения UID. Нагрузка
+CPU/RAM, повторные/аварийные host scenarios и human review конфигурации ещё открыты.
+Ошибка несовместимости не разрешает менять API version или транспорт автоматически.
 
 [Точная процедура и лимиты](../operations/M3-DOCKER-ACQUISITION.md).
 Официальные источники проверены 2026-09-13:

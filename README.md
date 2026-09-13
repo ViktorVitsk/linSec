@@ -23,11 +23,12 @@ M2a sensors/config/storage contracts сохраняются. M2c implementation 
 hardening завершены; M2c принят: **PASS WITH KNOWN LIMITATIONS**.
 [Итог acceptance и непроверенные пункты](docs/operations/M2C-ACCEPTANCE.md).
 M3 начат: реализован synthetic Docker posture — adapter/result v1, отдельная SQLite,
-детекторы, dedup/drift и общий CLI/UI. Доступ к настоящему Docker daemon не подключён;
-real-host acquisition/acceptance и весь M3 ещё открыты.
+детекторы, dedup/drift и общий CLI/UI. Постоянный сбор с Docker daemon не подключён;
+полная host acceptance и весь M3 ещё открыты.
 2026-09-13: подготовлен одноразовый `docker-acquire` (по умолчанию только preview).
 Первая попытка владельца завершилась отказом на version; найденная ошибка
-шаблона исправлена, повторная host acceptance открыта;
+шаблона исправлена. После отдельного разрешения выполнен успешный host capture:
+Docker 29.1.3, три остановленных контейнера, status ok; полная host acceptance открыта;
 [план и границы approval](docs/operations/M3-DOCKER-ACQUISITION.md).
 Добавлен `docker-review`: offline проверка сохранённого capture по SHA-256, схеме
 и полноте с агрегированной сводкой posture. Команда не вызывает Docker и не
