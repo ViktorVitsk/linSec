@@ -140,3 +140,48 @@ First capture остаётся неизменным; повтор использ
 После исправления: **239 unittest PASS** (17 acquisition tests), Ruff/hygiene/DOM/
 offline lock/diff check и повторная wheel/sdist inspection — PASS. Новый capture
 не запускался coding agent; для владельца подготовлен `runtime/m3-host-20260913-r2`.
+
+## Локальная проверка сохранённого capture
+
+2026-09-13 добавлен `docker-review`: проверка **текущего capture v1 с diagnostic
+fields** без Docker, сети, inference и записи в БД. Старые artifacts с иной схемой
+отклоняются; их нельзя переписывать ради прохождения проверки. Повторный capture
+и human acceptance по-прежнему открыты.
+
+После отдельно согласованного сбора используйте `capture_sha256` из его краткого
+результата (не `approval_token`):
+
+```text
+uv run --cache-dir .cache/uv --no-sync sec docker-review --capture runtime/m3-host-20260913-r2/capture.json --sha256 SHA256_FROM_CAPTURE_SUMMARY
+```
+
+Проверяются SHA-256 точных байтов, canonical JSON, строгий список полей, версии,
+UTC timestamps и порядок начала/конца, normalized records, diagnostic types и
+согласованность полноты. Файл ограничен 256 KiB; duplicate JSON keys, лишние поля
+(в том числе Env), ложный `host_validated=true`, неизвестные enum и `ok` с пропусками
+отклоняются. Чтение не меняет permissions: нужны собственный private каталог и
+regular файл без group/other permissions, hardlinks и symlinks; FIFO не блокирует
+команду. Metadata проверяются до и после bounded read.
+
+Вывод содержит времена, Engine/API, status/reason, flags, diagnostics, число
+контейнеров, неизвестные поля и количество контейнеров по существующим posture
+rules с русскими объяснениями. Container IDs, addresses/ports, mount hashes,
+approval token и raw metadata не выводятся. Drift/removals не вычисляются из
+одного снимка. Это не импорт host evidence в synthetic Result/DB/UI.
+
+Exit 0: артефакт валиден и ограниченный capture сообщил `ok`; exit 2: ошибка
+проверки либо валидный partial/unavailable. `artifact_valid=true` означает только
+проверку сохранённого файла. `host_validated=false` остаётся всегда; отсутствие
+findings не означает clean host. SHA-256 без независимого доверенного источника
+digest не подтверждает происхождение; same-UID tampering/races не устранены.
+Фактические Go templates, полнота выбранного scope, CPU/RAM и соответствие
+конфигурации проверяются отдельно владельцем, по времени capture.
+
+Synthetic tests проверяют parity CLI/application/shared rules, неизменность файла,
+отсутствие process/socket calls и DB writes, partial/empty/unavailable, hash mismatch,
+hostile schema, size/depth limits и отказ для небезопасных типов/permissions файла.
+Используются только disposable fixtures, включая FIFO; реальный capture не выполнялся.
+
+Результаты этой доработки 2026-09-13: **245 unittest PASS**, в том числе 23 acquisition/
+review tests; Ruff, repository hygiene, UI DOM test и diff check — PASS. Зависимости
+не менялись. Эти результаты не закрывают повторную host acceptance.

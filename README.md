@@ -6,7 +6,7 @@
 и учиться безопасности на реальных событиях. **Безопасность → надёжность → понятность
 → простота → автоматизация → функции.**
 
-## Состояние на 2026-09-12
+## Состояние на 2026-09-13
 
 **M0/M1 завершены в согласованном scope. Реализован foreground runtime M2a:**
 устанавливаемый `sec`, Linux collectors, SQLite, baseline/diff, история, предупреждения
@@ -29,6 +29,9 @@ real-host acquisition/acceptance и весь M3 ещё открыты.
 Первая попытка владельца завершилась отказом на version; найденная ошибка
 шаблона исправлена, повторная host acceptance открыта;
 [план и границы approval](docs/operations/M3-DOCKER-ACQUISITION.md).
+Добавлен `docker-review`: offline проверка сохранённого capture по SHA-256, схеме
+и полноте с агрегированной сводкой posture. Команда не вызывает Docker и не
+заменяет human acceptance; [применение](docs/operations/M3-DOCKER-ACQUISITION.md#локальная-проверка-сохранённого-capture).
 
 - [Roadmap: M2a watchdog → M2b AI → M2c надёжность/UI → M3 Docker](docs/ROADMAP.md).
 - [Архитектура, ежедневный цикл и данные](docs/architecture/overview.md).

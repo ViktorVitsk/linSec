@@ -1,6 +1,8 @@
 """Prepared live boundary tested only with synthetic responses and mocked process/OS access."""
 
 from contextlib import redirect_stdout
+from copy import deepcopy
+import hashlib
 import io
 import json
 import os
@@ -16,8 +18,9 @@ from unittest.mock import patch
 from security_orchestrator.adapters import docker_acquire as adapter
 from security_orchestrator.cli import main
 from security_orchestrator.docker_posture.acquisition import plan, run
+from security_orchestrator.docker_posture.review import read_capture, review, validate
 from security_orchestrator.docker_posture.scenarios import CONTAINER, container
-from security_orchestrator.model import InvalidInput, encode
+from security_orchestrator.model import InvalidInput, digest, encode
 
 VERSION = {"version": "28.3.3", "api": "1.51", "min_api": "1.24", "os": "linux"}
 
@@ -254,6 +257,169 @@ class ApprovalTests(unittest.TestCase):
                 self.assertRaises(adapter.AcquisitionError),
             ):
                 runner.identity()
+
+
+class ReviewTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.path = Path(self.temp.name) / "capture.json"
+        self.value = adapter.capture(FakeRunner()) | {"approval_token": "e" * 64}
+
+    def save(self, value=None, raw=None):
+        if raw is None:
+            raw = encode(self.value if value is None else value).encode()
+        self.path.write_bytes(raw)
+        self.path.chmod(0o600)
+        return hashlib.sha256(raw).hexdigest()
+
+    def test_review_matches_shared_rules_without_exposing_object_metadata_or_mutations(self):
+        from security_orchestrator.docker_posture.detection import posture
+
+        sha = self.save()
+        before = self.path.read_bytes()
+        with (
+            patch.object(adapter.subprocess, "Popen", side_effect=AssertionError("no process")),
+            patch.object(adapter.Runner, "identity", side_effect=AssertionError("no socket")),
+        ):
+            result = review(self.path, sha)
+            out = io.StringIO()
+            state = self.path.parent / "unused-state"
+            with redirect_stdout(out):
+                rc = main([
+                    "--state", str(state), "docker-review", "--capture", str(self.path),
+                    "--sha256", sha,
+                ])
+        self.assertEqual(rc, 0)
+        self.assertEqual(json.loads(out.getvalue()), result)
+        self.assertEqual(self.path.read_bytes(), before)
+        self.assertFalse(state.exists())
+        self.assertEqual(list(self.path.parent.iterdir()), [self.path])
+        self.assertEqual(
+            {f["rule"] for f in result["findings"]},
+            {rule for rule, _ in posture(self.value["containers"][CONTAINER])},
+        )
+        self.assertTrue(result["artifact_valid"])
+        self.assertFalse(result["host_validated"])
+        self.assertFalse(result["database_imported"])
+        self.assertNotIn(CONTAINER, encode(result))
+        self.assertNotIn("source_ref", encode(result))
+        self.assertNotIn("approval_token", result)
+        self.assertEqual(sha, digest(self.value))
+
+    def test_failed_partial_empty_and_socket_changed_artifacts_remain_honest(self):
+        for scenario in ("failed", "unknown", "disappeared", "changed", "socket", "empty", "timeout"):
+            with self.subTest(scenario=scenario):
+                runner = FakeRunner()
+                if scenario == "failed":
+                    runner.error = "command_failed"
+                elif scenario == "unknown":
+                    del runner.records[CONTAINER]["Config"]["User"]
+                elif scenario == "disappeared":
+                    runner.records[CONTAINER] = adapter.AcquisitionError(
+                        "command_failed", returncode=1, stderr_present=True
+                    )
+                elif scenario == "changed":
+                    runner.lists[-1] = []
+                elif scenario == "socket":
+                    runner.identities[-1] = "d" * 64
+                elif scenario == "empty":
+                    runner.lists = [[], []]
+                elif scenario == "timeout":
+                    runner.error = "timeout"
+                value = adapter.capture(runner) | {"approval_token": "e" * 64}
+                sha = self.save(value)
+                result = review(self.path, sha)
+                self.assertTrue(result["artifact_valid"])
+                self.assertEqual(result["status"], value["status"])
+                self.assertFalse(result["host_validated"])
+                if scenario == "unknown":
+                    self.assertEqual(result["unknown_fields"], {"user": 1})
+                if scenario == "disappeared":
+                    self.assertEqual(result["inspect_failures"], 1)
+                    self.assertEqual(result["command_exit_code"], 1)
+                with redirect_stdout(io.StringIO()):
+                    self.assertEqual(
+                        main(["docker-review", "--capture", str(self.path), "--sha256", sha]),
+                        0 if scenario == "empty" else 2,
+                    )
+
+    def test_contradictory_or_unminimized_capture_is_rejected_even_with_matching_hash(self):
+        changes = [
+            {"Env": ["synthetic-private-value"]}, {"schema_version": True},
+            {"origin": "synthetic"}, {"host_validated": True}, {"atomic_snapshot": True},
+            {"daemon_identity_verified": True}, {"source_id": None}, {"engine": None},
+            {"inventory_consistent": False}, {"socket_unchanged": False},
+            {"status": "unavailable", "reason": "timeout"}, {"reason": "synthetic-private-value"},
+            {"inspect_failures": True}, {"inspect_failures": 1},
+            {"last_failed_step": "synthetic-private-value"}, {"command_exit_code": True},
+            {"stderr_present": "synthetic-private-value"}, {"approval_token": "bad"},
+            {"finished_at": "2000-01-01T00:00:00+00:00"},
+            {"started_at": "2026-09-13T12:00:00+03:00"},
+            {"status": "partial", "reason": "incomplete_or_changed"},
+        ]
+        values = [self.value | change for change in changes]
+        for field, content in (("privileged", None), ("Env", ["synthetic-private-value"]), ("user", [])):
+            value = deepcopy(self.value)
+            value["containers"][CONTAINER][field] = content
+            values.append(value)
+        value = deepcopy(self.value)
+        value["engine"]["api"] = "1.50"
+        values.append(value)
+        for value in values:
+            with self.subTest(change=value.keys()):
+                with self.assertRaisesRegex(InvalidInput, "invalid_docker_capture_contents_omitted"):
+                    read_capture(self.path, self.save(value))
+
+    def test_duplicate_keys_noncanonical_json_and_resource_limits_are_rejected(self):
+        for raw in (
+            b'{"origin":"docker_cli_capture","origin":"synthetic-private-value"}',
+            b"[" * 1000 + b"]" * 1000,
+            json.dumps(self.value, indent=2).encode(),
+            b"x" * (adapter.MAX_INPUT + 1),
+        ):
+            with self.assertRaises(InvalidInput):
+                read_capture(self.path, self.save(raw=raw))
+        with self.assertRaises(InvalidInput):
+            validate(self.value | {"containers": {f"{i:064x}": self.value["containers"][CONTAINER] for i in range(33)}})
+
+    def test_hash_mismatch_refuses_replaced_evidence_without_reflecting_contents(self):
+        sha = self.save()
+        self.save(self.value | {"reason": "synthetic-private-value"})
+        out = io.StringIO()
+        with redirect_stdout(out):
+            rc = main(["docker-review", "--capture", str(self.path), "--sha256", sha])
+        self.assertEqual(rc, 2)
+        self.assertEqual(json.loads(out.getvalue()), {"error": "docker_capture_sha256_mismatch"})
+        with patch("os.open", side_effect=AssertionError("no file read")), self.assertRaises(InvalidInput):
+            read_capture(self.path, "bad")
+
+    def test_symlink_hardlink_fifo_and_nonprivate_artifacts_are_refused(self):
+        sha = self.save()
+        self.path.chmod(0o644)
+        with self.assertRaises(InvalidInput):
+            read_capture(self.path, sha)
+        self.path.chmod(0o600)
+        for kind in ("symlink", "hardlink", "fifo", "directory"):
+            target = self.path.parent / kind
+            if kind == "symlink":
+                target.symlink_to(self.path)
+            elif kind == "hardlink":
+                target.hardlink_to(self.path)
+            elif kind == "fifo":
+                os.mkfifo(target, 0o600)
+            else:
+                target.mkdir(mode=0o700)
+            with self.assertRaises(InvalidInput):
+                read_capture(target, sha)
+            if kind == "directory":
+                target.rmdir()
+            else:
+                target.unlink()
+        self.path.parent.chmod(0o755)
+        with self.assertRaises(InvalidInput):
+            read_capture(self.path, sha)
+        self.path.parent.chmod(0o700)
 
 
 class ProcessTests(unittest.TestCase):

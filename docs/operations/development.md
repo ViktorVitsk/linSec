@@ -152,3 +152,7 @@ Main M2a/M2c schemas не мигрируются. [Контракт и откр�
 2026-09-13: `test_docker_acquisition.py` проверяет подготовленную one-shot границу
 через fake runner и mocked process/OS interfaces. Preview не запускает Docker;
 никакой testcase не обращается к host socket. [План первого capture](M3-DOCKER-ACQUISITION.md).
+В этом же suite offline `docker-review` проверяется на disposable capture files,
+включая malformed/oversized JSON, digest mismatch, symlink/hardlink/FIFO и permissions.
+Process/socket calls запрещены mocks; CLI/application parity и отсутствие DB writes
+проверяются без настоящего host evidence. Review не является host acceptance.

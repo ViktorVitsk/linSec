@@ -92,6 +92,11 @@ def parser() -> argparse.ArgumentParser:
     acquire.add_argument(
         "--approve", help="Токен точного plan; разрешает единственный real-host capture"
     )
+    docker_review = commands.add_parser(
+        "docker-review", help="M3: проверить сохранённый capture без Docker/БД"
+    )
+    docker_review.add_argument("--capture", type=Path, required=True)
+    docker_review.add_argument("--sha256", required=True, help="capture_sha256 из результата сбора")
     docker_view = commands.add_parser("docker-view", help="M3: read-only synthetic Docker evidence")
     docker_view.add_argument("id", type=int, nargs="?")
     docker_view.add_argument("--docker-state", type=Path, required=True)
@@ -154,6 +159,12 @@ def main(argv: list[str] | None = None) -> int:
             )
             emit(result)
             return 0 if result.get("status", "ok") == "ok" else 2
+        if args.command == "docker-review":
+            from .docker_posture.review import review
+
+            result = review(args.capture, args.sha256)
+            emit(result)
+            return 0 if result["status"] == "ok" else 2
         if args.command == "docker-view":
             from .docker_posture.service import PostureQueries
 
