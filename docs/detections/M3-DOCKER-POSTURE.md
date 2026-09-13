@@ -1,7 +1,9 @@
 # Детекторы M3 Docker posture v1
 
-Дата: 2026-09-12. Источник: только synthetic inspect-shaped envelope;
-host coverage отсутствует. [Contract/лимиты](../operations/M3-DOCKER-POSTURE.md).
+Дата: 2026-09-12, обновление 2026-09-13. Источник в DB/UI: synthetic inspect-shaped
+envelope. Отдельный offline `docker-review --details` применяет те же posture rules
+к проверенному minimized host capture; DB/UI host coverage пока отсутствует.
+[Contract/лимиты](../operations/M3-DOCKER-POSTURE.md).
 Все правила собственные; Sigma/сторонние rule packs не копировались.
 
 ## Publications
@@ -64,6 +66,18 @@ labels и runtime running/observed ports исключены; это намере
 не создаёт removals и не означает восстановление событий между snapshots.
 
 ## Разбор и реакция
+
+Для сохранённого host capture используйте `sec docker-review --capture <файл>
+--sha256 <digest из capture summary> --details`. Сначала проверьте время, status,
+completeness и state каждого ID. `configured_ports` — сохранённые настройки,
+`observed_ports` — наблюдавшиеся mappings; ни одно поле не доказывает reachability.
+Stopped не отменяет конфигурационные findings и не означает, что их эффект сейчас
+активен. Unknown не подменяется stopped. ID можно сопоставить с известным workload
+локально; имена и raw paths не восстанавливаются из evidence. Значения bindings
+и IDs предназначены для локального просмотра, а не автоматического cloud export.
+Mount details показывают только category/type/rw: конкретный source/target путь
+из этой проекции подтвердить нельзя. Подтверждение происхождения workload человеком
+не заменяет проверку каждой настройки и не создаёт trust/suppression.
 
 1. Откройте `sec docker-view ID --docker-state <synthetic-directory>` или detail в UI.
    Сначала проверьте origin, source coverage/freshness и то, что это synthetic сценарий.

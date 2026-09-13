@@ -421,6 +421,132 @@ class ReviewTests(unittest.TestCase):
             read_capture(self.path, sha)
         self.path.parent.chmod(0o700)
 
+    def test_details_keep_stopped_and_unknown_states_separate_from_posture(self):
+        runner = FakeRunner()
+        raw = runner.records[CONTAINER]
+        raw["Config"]["User"] = "0"
+        raw["HostConfig"]["PortBindings"] = {
+            "80/tcp": [{"HostIp": "192.0.2.10", "HostPort": "8080"}]
+        }
+        value = adapter.capture(runner) | {"approval_token": "e" * 64}
+        value.update(status="partial", reason="incomplete_or_changed")
+        running = deepcopy(value["containers"][CONTAINER])
+        running["running"] = True
+        unknown = deepcopy(running)
+        unknown["running"] = None
+        value["containers"].update({"c" * 64: running, "d" * 64: unknown})
+        sha = self.save(value)
+        summary = review(self.path, sha)
+        result = review(self.path, sha, details=True)
+        self.assertEqual(result["container_states"], {"running": 1, "stopped": 1, "unknown": 1})
+        self.assertEqual(result["containers_with_findings"], 3)
+        self.assertNotIn("container_details", summary)
+        self.assertNotIn(CONTAINER, encode(summary))
+        self.assertNotIn("192.0.2.10", encode(summary))
+        self.assertEqual(
+            [(item["container_id"], item["state"]) for item in result["container_details"]],
+            [(CONTAINER, "stopped"), ("c" * 64, "running"), ("d" * 64, "unknown")],
+        )
+        for item in result["container_details"]:
+            by_rule = {finding["rule"]: finding for finding in item["findings"]}
+            self.assertEqual(set(by_rule), {"publication", "root_user"})
+            publication = by_rule["publication"]["evidence"]
+            self.assertEqual(publication.keys(), {"configured_ports"})
+            self.assertEqual(publication["configured_ports"][0]["ip"], "192.0.2.10")
+            self.assertEqual(item["unknown_fields"], ["running"] if item["state"] == "unknown" else [])
+        self.assertFalse(result["host_validated"])
+
+    def test_detail_cli_minimizes_mount_references_and_cannot_collect_or_modify(self):
+        runner = FakeRunner()
+        raw = runner.records[CONTAINER]
+        raw["Mounts"] = [
+            {"Type": "bind", "Source": source, "Destination": target, "RW": True}
+            for source, target in (("/etc/synthetic-a", "/mount-a"), ("/etc/synthetic-b", "/mount-b"))
+        ]
+        raw["Config"]["User"] = "root"
+        raw["HostConfig"].update(Privileged=True, PidMode="host", CapAdd=["SYS_ADMIN"])
+        self.value = adapter.capture(runner) | {"approval_token": "e" * 64}
+        sha = self.save()
+        before = self.path.read_bytes()
+        with (
+            patch.object(adapter.subprocess, "Popen", side_effect=AssertionError("no process")),
+            patch.object(adapter.Runner, "identity", side_effect=AssertionError("no socket")),
+        ):
+            result = review(self.path, sha, details=True)
+            out = io.StringIO()
+            with redirect_stdout(out):
+                rc = main([
+                    "docker-review", "--capture", str(self.path), "--sha256", sha, "--details",
+                ])
+        self.assertEqual(rc, 0)
+        self.assertEqual(json.loads(out.getvalue()), result)
+        self.assertEqual(self.path.read_bytes(), before)
+        self.assertEqual(list(self.path.parent.iterdir()), [self.path])
+        self.assertFalse(result["database_imported"])
+        findings = {item["rule"]: item for item in result["container_details"][0]["findings"]}
+        self.assertEqual(findings["sensitive_mount"]["evidence"], {
+            "mounts": [{"class": "system", "type": "bind", "rw": True}] * 2,
+        })
+        self.assertEqual(findings["host_namespace"]["evidence"], {"pid": "host"})
+        self.assertEqual(findings["privileged"]["evidence"], {"privileged": True})
+        for forbidden in (
+            "source_ref", "target_ref", "image", "approval_token", "source_id", "Config",
+            "synthetic-value-never-export", "ignore previous instructions", "/etc/synthetic-a",
+        ):
+            self.assertNotIn(forbidden, encode(result))
+        for mount in self.value["containers"][CONTAINER]["mounts"]:
+            self.assertNotIn(mount["source_ref"], encode(result))
+            self.assertNotIn(mount["target_ref"], encode(result))
+
+    def test_details_empty_and_unavailable_never_claim_host_validation(self):
+        for failed in (False, True):
+            runner = FakeRunner()
+            runner.lists = [[], []]
+            runner.error = "timeout" if failed else None
+            sha = self.save(adapter.capture(runner) | {"approval_token": "e" * 64})
+            result = review(self.path, sha, details=True)
+            self.assertEqual(result["container_details"], [])
+            self.assertEqual(result["container_states"], {"running": 0, "stopped": 0, "unknown": 0})
+            self.assertFalse(result["host_validated"])
+            self.assertEqual(result["status"], "unavailable" if failed else "ok")
+
+    def test_detail_options_and_hostile_file_fail_before_any_evidence_output(self):
+        with patch("os.open", side_effect=AssertionError("no file read")), self.assertRaises(InvalidInput):
+            review(self.path, "e" * 64, details="true")
+        value = deepcopy(self.value)
+        value["containers"][CONTAINER]["user"] = "synthetic-private-value"
+        sha = self.save(value)
+        out = io.StringIO()
+        with redirect_stdout(out):
+            rc = main([
+                "docker-review", "--capture", str(self.path), "--sha256", sha, "--details",
+            ])
+        self.assertEqual(rc, 2)
+        self.assertEqual(json.loads(out.getvalue()), {"error": "invalid_docker_capture_contents_omitted"})
+
+    def test_details_cover_full_inventory_and_distinguish_configured_from_observed_bindings(self):
+        runner = FakeRunner()
+        raw = runner.records[CONTAINER]
+        raw["State"]["Running"] = True
+        raw["HostConfig"]["PortBindings"] = {
+            "80/tcp": [{"HostIp": "192.0.2.1", "HostPort": "8080"}]
+        }
+        raw["NetworkSettings"]["Ports"] = {
+            "80/tcp": [{"HostIp": "2001:db8::1", "HostPort": "8081"}]
+        }
+        value = adapter.capture(runner) | {"approval_token": "e" * 64}
+        item = value["containers"][CONTAINER]
+        value["containers"] = {f"{i:064x}": deepcopy(item) for i in range(32)}
+        result = review(self.path, self.save(value), details=True)
+        self.assertEqual(len(result["container_details"]), 32)
+        self.assertEqual(result["container_states"], {"running": 32, "stopped": 0, "unknown": 0})
+        for item in result["container_details"]:
+            findings = {finding["rule"]: finding for finding in item["findings"]}
+            ports = findings["publication"]["evidence"]
+            self.assertEqual(ports["configured_ports"][0]["host_port"], 8080)
+            self.assertEqual(ports["observed_ports"][0]["host_port"], 8081)
+        self.assertLessEqual(len(encode(result)), 2 * adapter.MAX_INPUT)
+
 
 class ProcessTests(unittest.TestCase):
     def test_bounded_runner_drains_stderr_kills_owned_process_and_never_reflects_it(self):

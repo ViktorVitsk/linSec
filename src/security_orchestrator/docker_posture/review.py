@@ -118,19 +118,49 @@ def read_capture(path: Path, expected_sha256: str):
     return value
 
 
-def review(path: Path, expected_sha256: str):
+def finding_detail(rule, evidence):
+    # Mount references are unnecessary for manual posture triage and may reveal
+    # guessable paths. Keep multiplicity, category, type and write access only.
+    if rule == "sensitive_mount":
+        evidence = {
+            "mounts": [
+                {key: mount[key] for key in ("class", "type", "rw")}
+                for mount in evidence["mounts"]
+            ]
+        }
+    return {
+        "rule": rule,
+        "severity": RULES[rule][0],
+        "explanation": RULES[rule][1],
+        "evidence": evidence,
+    }
+
+
+def review(path: Path, expected_sha256: str, *, details: bool = False):
+    require(type(details) is bool, "docker_review_invalid_details_option")
     value = read_capture(path, expected_sha256)
     counts, unknown, affected = {}, {}, 0
-    for item in value["containers"].values():
+    states = {"running": 0, "stopped": 0, "unknown": 0}
+    objects = []
+    for key, item in sorted(value["containers"].items()):
         findings = posture(item)
         affected += bool(findings)
+        state = "unknown" if item["running"] is None else "running" if item["running"] else "stopped"
+        states[state] += 1
         for rule, _ in findings:
             counts[rule] = counts.get(rule, 0) + 1
         for field, content in item.items():
             if content is None:
                 unknown[field] = unknown.get(field, 0) + 1
-    # Aggregate only: no container IDs, IPs, ports, mount hashes or untrusted text.
-    return {
+        if details:
+            objects.append({
+                "container_id": key,
+                "state": state,
+                "unknown_fields": sorted(field for field, content in item.items() if content is None),
+                "findings": [finding_detail(rule, evidence) for rule, evidence in findings],
+            })
+    # Default is aggregate-only; details are an explicit local view, never an AI export.
+    result = {
         "schema_version": 1,
         "origin": "docker_cli_capture",
         "capture_sha256": expected_sha256,
@@ -151,6 +181,7 @@ def review(path: Path, expected_sha256: str):
         "stderr_present": value["stderr_present"],
         "inspect_failures": value["inspect_failures"],
         "containers": len(value["containers"]),
+        "container_states": states,
         "containers_with_findings": affected,
         "unknown_fields": dict(sorted(unknown.items())),
         "findings": [
@@ -162,5 +193,13 @@ def review(path: Path, expected_sha256: str):
             "SHA-256 сверяет файл с указанным digest; это не подпись и не доказательство происхождения.",
             "Partial/unavailable и неизвестные поля не означают отсутствие риска. Пропуски не восстановлены.",
             "Host acceptance, нагрузку CLI и соответствие конфигурации проверяет владелец отдельно.",
+            "Stopped — состояние при capture; сохранённые настройки не доказывают активную публикацию. Running тоже не доказывает доступность из Интернета.",
         ],
     }
+    if details:
+        result["container_details"] = objects
+        result["limitations"].append(
+            "Детали содержат локальные container IDs и bindings. Names/env/labels/raw paths не собирались; mount references исключены. Сопоставьте ID с известным workload вручную."
+        )
+    require(len(encode(result)) <= 2 * MAX_INPUT, "docker_review_output_limit")
+    return result

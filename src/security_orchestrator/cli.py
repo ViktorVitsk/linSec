@@ -97,6 +97,10 @@ def parser() -> argparse.ArgumentParser:
     )
     docker_review.add_argument("--capture", type=Path, required=True)
     docker_review.add_argument("--sha256", required=True, help="capture_sha256 из результата сбора")
+    docker_review.add_argument(
+        "--details", action="store_true",
+        help="Локальные ID/state и evidence по контейнерам; содержит bind addresses/ports",
+    )
     docker_view = commands.add_parser("docker-view", help="M3: read-only synthetic Docker evidence")
     docker_view.add_argument("id", type=int, nargs="?")
     docker_view.add_argument("--docker-state", type=Path, required=True)
@@ -162,7 +166,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "docker-review":
             from .docker_posture.review import review
 
-            result = review(args.capture, args.sha256)
+            result = review(args.capture, args.sha256, details=args.details)
             emit(result)
             return 0 if result["status"] == "ok" else 2
         if args.command == "docker-view":

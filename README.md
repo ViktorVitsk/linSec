@@ -31,7 +31,9 @@ M3 начат: реализован synthetic Docker posture — adapter/result 
 Docker 29.1.3, три остановленных контейнера, status ok; полная host acceptance открыта;
 [план и границы approval](docs/operations/M3-DOCKER-ACQUISITION.md).
 Добавлен `docker-review`: offline проверка сохранённого capture по SHA-256, схеме
-и полноте с агрегированной сводкой posture. Команда не вызывает Docker и не
+и полноте с агрегированной сводкой posture и количеством running/stopped/unknown.
+Опция `--details` показывает ID/state и минимизированное evidence каждого контейнера
+для ручной приёмки. Команда не вызывает Docker и не
 заменяет human acceptance; [применение](docs/operations/M3-DOCKER-ACQUISITION.md#локальная-проверка-сохранённого-capture).
 
 - [Roadmap: M2a watchdog → M2b AI → M2c надёжность/UI → M3 Docker](docs/ROADMAP.md).

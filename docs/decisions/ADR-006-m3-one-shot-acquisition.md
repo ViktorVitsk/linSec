@@ -41,7 +41,9 @@ Host capture пока не импортируется в БД: admission тре�
 
 Дополнение 2026-09-13: `docker-review` читает явно выбранный minimized capture с
 ожидаемым SHA-256, проверяет строгую схему/полноту и возвращает только агрегаты
-существующих posture rules. Операция не вызывает acquisition и не принимает evidence
+существующих posture rules. Явный локальный `--details` дополнительно показывает
+container ID/state и evidence каждого finding; mount references, image hash,
+source ID и approval token не выводятся. Операция не вызывает acquisition и не принимает evidence
 в synthetic DB/UI. `artifact_valid` отделён от `host_validated=false`; hash не является
 подписью, а валидный capture не заменяет host acceptance. Это завершение процедуры
 проверки отдельного файла, без расширения доступа к daemon или нового storage contract.

@@ -164,10 +164,11 @@ UTC timestamps и порядок начала/конца, normalized records, di
 regular файл без group/other permissions, hardlinks и symlinks; FIFO не блокирует
 команду. Metadata проверяются до и после bounded read.
 
-Вывод содержит времена, Engine/API, status/reason, flags, diagnostics, число
-контейнеров, неизвестные поля и количество контейнеров по существующим posture
-rules с русскими объяснениями. Container IDs, addresses/ports, mount hashes,
-approval token и raw metadata не выводятся. Drift/removals не вычисляются из
+Обычный вывод содержит времена, Engine/API, status/reason, flags, diagnostics, число
+контейнеров с running/stopped/unknown, неизвестные поля и количество контейнеров по
+существующим posture rules с русскими объяснениями. В обычной сводке container IDs,
+addresses/ports, mount hashes, approval token и raw metadata не выводятся.
+Отдельный локальный режим `--details` описан ниже. Drift/removals не вычисляются из
 одного снимка. Это не импорт host evidence в synthetic Result/DB/UI.
 
 Exit 0: артефакт валиден и ограниченный capture сообщил `ok`; exit 2: ошибка
@@ -223,3 +224,47 @@ Host rollback не требуется; новые каталоги остают�
 отдельные CPU/RAM измерения, repeated/partial/error acceptance на хосте и worker
 isolation. Импорт host evidence в DB/UI и monitoring требуют отдельного increment;
 synthetic databases и текущие M2a/M2c contracts не менялись. M3 целиком не закрыт.
+
+## Подробный разбор и контекст владельца
+
+2026-09-13 добавлен `docker-review --details`: тот же проверенный файл, без нового
+сбора, Docker, inference, DB/UI import и изменения capture. Точная команда для
+сохранённого успешного результата:
+
+```bash
+uv run --cache-dir .cache/uv --no-sync sec docker-review \
+  --capture runtime/m3-host-20260913-r3/capture.json \
+  --sha256 be272f2096cb850dc4e2366f9bd78498403b5f1867265bc79ebe2b647172ae67 \
+  --details
+```
+
+Опция выводит до 32 containers в порядке полных hex IDs: state, unknown fields,
+posture findings с severity, русским объяснением и минимизированным evidence.
+Для publications отдельно видны configured/observed bindings с IP, protocol и ports.
+Mount evidence сохраняет category/type/rw и число записей; source/target hashes
+исключены вместе с image hash, source ID и approval token. Names/env/labels/raw paths
+не собираются дополнительно. Detail IDs/bindings остаются локальными metadata,
+не готовым AI/cloud export. Canonical JSON результата ограничен 512 KiB;
+CLI pretty printing может увеличить число выводимых байтов.
+
+Сводка без `--details` остаётся агрегированной, дополнена `container_states`.
+Running/stopped/unknown относятся к времени capture; unknown никогда не считается
+stopped. Конфигурационные findings у остановленного контейнера сохраняются, но
+не доказывают активную публикацию или текущую угрозу. Даже отсутствие findings
+и полный capture не изменяют `host_validated=false`.
+
+Контекст владельца от 2026-09-13: «Это давно созданные контейнеры для моих пет
+проектов. Я ими не пользуюсь». Подтверждено назначение/происхождение и отсутствие
+заявленного текущего использования. Это контекст человека, отдельно от измеренного
+state=stopped. Владелец не подтвердил каждый bind/user/mount, поэтому соответствующая
+проверка конфигурации и оценка полезности/шума правил не объявлены полной приёмкой.
+Trust/suppression/baseline и lifecycle не менялись; разрешение на start/delete
+из этого ответа не следует. Условия M1 перед будущим запуском сохраняются.
+
+Проверки доработки: **250 unittest PASS**, включая 28 acquisition/review tests;
+Ruff, hygiene, UI DOM, local links и diff check — PASS. Dependency/runtime changes
+не добавлялись. Offline demonstration на прежнем capture r3: status ok,
+3 details, running/stopped/unknown = 0/3/0. Локальный производный файл
+`runtime/m3-host-20260913-r3/review-details.json` создан с mode 0600, не включён
+в Git; capture неизменён. Повторного обращения к Docker не было. CPU/RAM и остальные
+host acceptance gates остаются открытыми.

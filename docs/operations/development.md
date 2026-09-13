@@ -156,3 +156,6 @@ Main M2a/M2c schemas не мигрируются. [Контракт и откр�
 включая malformed/oversized JSON, digest mismatch, symlink/hardlink/FIFO и permissions.
 Process/socket calls запрещены mocks; CLI/application parity и отсутствие DB writes
 проверяются без настоящего host evidence. Review не является host acceptance.
+Опция `docker-review --details` проверяется на minimization mount references,
+различение configured/observed ports и running/stopped/unknown, полный inventory
+из 32 объектов, invalid options/schema и отсутствие side effects.

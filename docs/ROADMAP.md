@@ -55,6 +55,9 @@ multi-tenant и SaaS сейчас не посвящаем отдельную а�
   на Docker 29.1.3: 3 stopped containers, status ok; offline review PASS. Попытка r2
   остановилась до Docker из-за отображения UID socket в sandbox; r3 выполнен через
   штатное разрешение вне sandbox без sudo. [Evidence и открытые пункты](operations/M3-DOCKER-ACQUISITION.md#первый-успешный-capture-и-граница-подтверждения).
+  Для ручной приёмки добавлены `docker-review --details` и running/stopped/unknown
+  в сводке. Владелец подтвердил контекст: старые неиспользуемые containers пет-проектов;
+  это не подтверждение каждой настройки, не trust/suppression и не разрешение запуска.
 
 Уточнение 2026-09-11 перед M2b: [границы доверия](architecture/trust-boundaries.md).
 Исправлены C1/DEL terminal escaping, проверка сохранённого evidence и лимит partial
@@ -64,8 +67,9 @@ LLM export/action boundary относится к M2b, Docker/worker isolation �
 
 Текущая поставка — M2a, отдельный M2b и M2c с принятой bounded host/browser acceptance.
 Добавлен отдельный synthetic этап M3 и подготовлены одноразовый capture/offline review.
-Первый real-host acquisition и `docker-review` прошли. Следующий шаг — human review
-конфигурации/findings и оставшиеся измерения/acceptance первого Docker posture increment;
+Первый real-host acquisition и `docker-review` прошли; контекст происхождения containers
+подтверждён владельцем. Следующий шаг — CPU/RAM и оставшиеся измерения/acceptance,
+включая проверку конкретной конфигурации через `docker-review --details`;
 [границы поставки ниже](#m3--docker-и-developer-security). История начального M2a soak
 сохраняется отдельно; будущие AI/M2c результаты не смешиваются с его метриками. [Совместимость без изменения M2a contracts](decisions/ADR-003-m2b-investigation-boundary.md).
 Следующий шаг M2b — сравнительный local benchmark и human review после отдельного
