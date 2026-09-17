@@ -10,6 +10,11 @@
   Follow [ADR-007](docs/decisions/ADR-007-reuse-first-orchestrator.md); do not resume
   superseded M3 acceptance or expand frozen journal/UI/scanner subsystems automatically.
 - Current milestone status and acceptance gates are maintained in the roadmap; do not infer them from older plans.
+- Current priority: evaluate existing M2a during 5–7 ordinary working days, with separate
+  host-launch approval. Preserve collectors, SQLite, baseline/diff and scheduler.
+  Gitleaks integration and osquery pilot are deferred; a systemd timer migration is optional.
+  Add no features; return to code only for a confirmed problem. Replace working components
+  only when demonstrated benefit exceeds migration cost and risk.
 - Linux first; keep the core portable. No Windows sensors, SaaS, SIEM or distributed stack now.
 
 ## Safety boundaries — always apply

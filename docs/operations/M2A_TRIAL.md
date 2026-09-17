@@ -2,6 +2,31 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
+## Текущее решение — 2026-09-13
+
+После аудита владелец выбрал оценку существующего M2a на 5–7 обычных рабочих днях
+как ближайший этап. Это заменяет прежнее решение отложить trial до расширения
+runtime/integration stage. Дата новой серии будет определена после отдельного
+разрешения запуска; на момент подготовки monitor не запущен.
+[Команды, продолжение состояния и критерии](M2A-WATCHDOG.md#m2a-daily-trial).
+
+Подготовительная проверка сохранённого `runtime/watchdog` без host collectors:
+read-only reader подтвердил schema v2, baseline revision 1, совпадение текущей
+`config.example.toml` со scope всех восьми sources и baseline. SQLite quick check
+и evidence links прошли. Блокировка monitor свободна в доступном окружении,
+disabled=false; это не глобальная проверка процессов/services.
+Все sources stale; последние сохранённые времена сбора — 2026-09-12 13:45:38–40 UTC.
+Последний systemd_system partial/access_or_io остаётся историческим наблюдением.
+Есть 5 active/unclosed и 5 pending alerts, всего 949 alerts, 53 snapshots,
+300 audit entries, 8 baseline sources, исключений 0; размер DB 999424 bytes.
+Ненулевое число alerts не является диагнозом; их полезность/шум ещё нужно оценить.
+Fingerprint config: `4477f262868897fba816eb32561f323b78f9bd5cfa36b6a1746b063a3901c056`.
+Каталог 0700, DB/control files 0600; checksum DB до/после read-only проверки совпал.
+Сырые observations не выводились, baseline/история/исключения не изменялись.
+
+Далее — неизменённая история первой серии и решений на 2026-09-12. Её прежние
+«следующие шаги» не являются текущим планом и не подтверждают состояние хоста сейчас.
+
 ## Trial status
 
 Обновлено: 2026-09-12.

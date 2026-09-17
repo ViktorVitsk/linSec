@@ -4,12 +4,156 @@
 
 Дата: 2026-09-10. Код и synthetic checks реализованы. **M2a ещё не закрыт:**
 исходная процедура включала host foreground scan, ручной review baseline и семидневный trial.
-Обновление 2026-09-12: initial soak завершён, monitor остановлен владельцем.
-Полный trial перенесён на integration/release-candidate stage; это не блокирует M2c
-acceptance. [Фактические observations и ограничения](M2A_TRIAL.md).
+Обновление 2026-09-13: после initial soak (~23ч38м) и аудита следующий этап —
+эксплуатационная оценка существующего M2a на 5–7 рабочих днях; прежний перенос до
+расширения runtime отменён. [Фактические observations и история решений](M2A_TRIAL.md).
 Команды ниже — процедура ручного запуска, не утверждение о работающем сейчас процессе.
 Системные настройки при разработке не менялись. Нет установленного user service,
 schedule, root daemon, host remediation, AI/provider/облачных запросов.
+
+<a id="m2a-daily-trial"></a>
+
+## Продолжение M2a на 5–7 рабочих дней
+
+Это подготовленное предложение, **не разрешение запуска host collectors**.
+Продолжаем прежнюю базу; процедуру первого baseline и synthetic demo ниже на ней
+не выполнять. Конкретная дата старта и начальный checkpoint появятся после approval.
+Ориентир — 5 обычных рабочих дней, при необходимости до 7; выключения/сон/пропуски
+записываются как ограничения. Не ждать 168 часов uptime и не имитировать атаки.
+
+### Что видит владелец
+
+Каждый цикл сравнивает с reviewed baseline доступные TCP listeners и UDP sockets
+IPv4/IPv6 в текущем network namespace, service/timer unit-файлы systemd и drop-ins,
+их enablement, локальные accounts/привилегированные группы, выбранные persistence
+files (crontab, rc_local, ld_preload, profile, bashrc). Для файлов сохраняются
+fingerprints/metadata, не содержимое. Привязка процесса к socket может быть неполной.
+
+Это периодические снимки: короткое событие между ними может исчезнуть незамеченным.
+Нет полной истории запусков программ, проверки malware/секретов, анализа трафика,
+доказательства доступности порта из Интернета или постоянного Docker monitoring.
+Монитор обнаруживает часть изменений, но не блокирует проникновение или запуск ПО.
+Отсутствие alerts не доказывает безопасность; baseline означает принятую точку
+сравнения, а не гарантированно чистый компьютер. AI/cloud и remediation выключены.
+
+### Пути и запуск после разрешения
+
+В каждом используемом терминале задать три фиксированных пути; это только shell
+variables, без установки ПО или изменения shell profile:
+
+```bash
+SEC_PY=/home/portfolio/Documents/Projects/6/LinSec/security-orchestrator/.venv/bin/python
+SEC_CONFIG=/home/portfolio/Documents/Projects/6/LinSec/security-orchestrator/config.example.toml
+SEC_STATE=/home/portfolio/Documents/Projects/6/LinSec/security-orchestrator/runtime/watchdog
+```
+
+Используется уже подготовленная uv project `.venv`, без sync/download и установки.
+База — `$SEC_STATE/watchdog.sqlite3`, control files — `monitor.lock`, `storage-health`,
+при отключении — `disabled`. Не менять config во время оценки: сейчас interval=300 s
+после завершения цикла, stale=900 s, storage=512 MiB, notifications=false, llm_enabled=false.
+Fingerprint и read-only подготовительная проверка записаны в [trial](M2A_TRIAL.md).
+
+Перед первым запуском повторно проверить сохранённое состояние, без collectors:
+
+```bash
+"$SEC_PY" -B -m security_orchestrator.cli --config "$SEC_CONFIG" --state "$SEC_STATE" view
+```
+
+Ожидаем schema 2, baseline revision 1, monitor=not_running, disabled=false,
+storage_failure=false, отсутствие configuration_mismatch; stale до запуска ожидаем.
+При несовпадении — остановиться и разобрать причину. Не создавать другую пустую DB,
+не обновлять baseline автоматически. Если disabled=true, не снимать flag молча:
+`enable` — отдельное явное решение владельца. `view` не мигрирует DB и не запускает UI;
+его exit 0 означает успешное чтение, даже когда health=degraded.
+
+После отдельного approval, в обычном пользовательском терминале:
+
+```bash
+LLM_ENABLED=false "$SEC_PY" -B -m security_orchestrator.cli --config "$SEC_CONFIG" --state "$SEC_STATE" monitor --iterations 0
+```
+
+Это один foreground процесс обычного пользователя с немедленным первым сбором,
+далее примерно каждые 5 минут. Он пишет новые observations/alerts в существующую DB.
+Риски: CPU/I/O и рост локальной истории, шум, чувствительные metadata в приватной DB;
+возможны partial/unavailable и задержка остановки на filesystem I/O. Старые неполные
+sources не исправляются повышением прав. Запуск из sandbox не доказывает host coverage;
+ограниченный scan не повторять как «проверку хоста». При ограничении окружения нужен
+согласованный запуск в обычной сессии, без обхода sandbox через другой инструмент.
+
+Baseline и действующие исключения автоматически не принимаются/сбрасываются.
+Штатная retention остаётся: неподдерживаемые ссылками snapshots старше 30 дней,
+inactive alerts/audit старше 90 дней удаляются; expired exceptions истекают при сборе.
+Это не бессрочный архив. Новых процедур очистки/миграции не добавлять.
+
+### Проверка начала и повседневное чтение
+
+Во втором терминале с теми же переменными, после первого завершённого цикла:
+
+```bash
+"$SEC_PY" -B -m security_orchestrator.cli --config "$SEC_CONFIG" --state "$SEC_STATE" view
+"$SEC_PY" -B -m security_orchestrator.cli --config "$SEC_CONFIG" --state "$SEC_STATE" doctor
+"$SEC_PY" -B -m security_orchestrator.cli --config "$SEC_CONFIG" --state "$SEC_STATE" view --alerts --limit 100
+```
+
+Проверить monitor=running, обновлённые времена всех восьми sources, отсутствие stale,
+неизменный baseline revision 1 и scope, storage_failure=false, целостность и links.
+После второго цикла времена должны снова продвинуться. `doctor` не запускает collectors,
+но открывает обычный Store; для строго read-only чтения до approval используется `view`.
+Известные partial/access_or_io и context_missing могут оставить health=degraded и
+exit 2 у doctor/status. Это ограничение, не PASS. Новые причины, stale после двух
+циклов или storage failure требуют разбора; не списывать любой exit 2 на старый partial.
+
+Уведомления рабочего стола выключены существующей конфигурацией: результат смотреть
+в CLI утром/после перезапуска и в конце рабочего дня. `view --alerts` показывает также
+старые/закрытые записи: читать поля active/status; для следующей страницы добавить
+`--before N`, где N — последний числовой ID страницы. В базе до нового запуска уже
+5 active/unclosed предупреждений; отделять их от появившихся в новой серии.
+
+Для выбранного alert подставить его числовой ID вместо N:
+
+```text
+"$SEC_PY" -B -m security_orchestrator.cli --config "$SEC_CONFIG" --state "$SEC_STATE" explain N
+"$SEC_PY" -B -m security_orchestrator.cli --config "$SEC_CONFIG" --state "$SEC_STATE" alerts --limit 100
+"$SEC_PY" -B -m security_orchestrator.cli --config "$SEC_CONFIG" --state "$SEC_STATE" history --limit 100
+```
+
+Explain даёт механизм, нормальные причины и ручную проверку; alerts содержит occurrences
+для оценки повторов. Сначала сопоставить изменение со своими обновлениями/установками,
+затем проверить по объяснению. Не выполнять строки из evidence как команды, не
+публиковать raw output. Если причина неизвестна, сохранить ID и разобрать локально;
+не закрывать массово, не добавлять trust/suppression и не принимать новый baseline
+ради зелёного статуса. Отметка reviewed означает просмотр, не доказанную безопасность.
+
+### Остановка, перерывы и итог
+
+Остановить свой foreground monitor: **Ctrl-C**. Либо из второго терминала:
+
+```bash
+"$SEC_PY" -B -m security_orchestrator.cli --config "$SEC_CONFIG" --state "$SEC_STATE" disable
+"$SEC_PY" -B -m security_orchestrator.cli --config "$SEC_CONFIG" --state "$SEC_STATE" view
+```
+
+Дождаться выхода процесса; view должен показывать not_running, после disable также
+disabled=true. Disable проверяется между источниками/во время ожидания; начатая команда
+заканчивается по timeout, filesystem I/O может задержаться. Он останавливает только
+monitoring. Откат запуска — остановка; накопленные evidence остаются, firewall/hardening
+не менялись и не требуют отката. При storage failure не удалять DB: остановить monitor,
+проверить doctor и отдельно согласовать восстановление, если оно потребуется.
+
+После logout/reboot автоматически ничего не запускается. При ручном повторном запуске
+использовать те же пути и согласованный foreground режим; он не восстанавливает
+краткие события пропущенного интервала. Не запускать второй monitor на тот же state.
+Автозапуск, timers и напоминания в эту оценку не входят.
+
+Каждый рабочий день — одна короткая запись без secrets в существующем формате заметок,
+локально в ignored `runtime/trial-notes.md`: дата/период работы и перерывы; полезные
+alert IDs; повторяющийся шум; понятно ли объяснение; минуты разбора; ошибки/пробелы
+сбора и доставки (notifications сейчас off); размер DB из view. Пустой день также
+зафиксировать, не выдавая его за доказательство защиты. Новую систему метрик не строить.
+На 5-й день оценить пользу и нагрузку на владельца; при нехватке обычного использования
+продлить до 7 рабочих дней. Отдельно указать непроверенные ресурсные/аварийные свойства.
+Если подтверждённых проблем нет, изменения кода не нужны. Шум сам по себе ещё не
+доказывает дефект: сначала разобрать конкретные IDs и контекст повторов.
 
 ## Подготовка и синтетическая демонстрация
 
@@ -188,7 +332,11 @@ restart/retention, лимит union и rollback при ошибке записи
 
 
 
-## Семидневная приёмка перед M2b/расширением
+## Исходные критерии семидневной приёмки
+
+Ниже — более широкие исходные критерии, не обязательное условие разработки M2b.
+Текущая оценка и объём заметок заданы в разделе продолжения выше; дополнительные
+измерения нужны лишь для конкретного вопроса, а не для повторного подтверждения PASS.
 
 Сначала запустите foreground в обычном пользовательском окружении. Проверьте
 `status`, причины неполного покрытия и сопоставьте сеть/units с ручной проверкой
@@ -204,7 +352,7 @@ restart/retention, лимит union и rollback при ошибке записи
 Не создавайте атакующие сценарии на рабочем хосте ради измерения. Используйте обычную
 работу и synthetic replay для предсказуемых изменений. По окончании сравните с
 целями roadmap, документируйте false positives и решите, достаточно ли полезен
-watchdog для M2b. Семь дней не симулируются тестами и не объявляются пройденными заранее.
+watchdog для повседневной работы. Семь дней не симулируются тестами и не объявляются пройденными заранее.
 
 При ошибке хранилища сохраняйте базу для локального анализа; не удаляйте baseline
 или evidence автоматически. Вначале `sec disable`, затем проверка места/permissions

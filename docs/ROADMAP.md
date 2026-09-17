@@ -13,15 +13,20 @@ multi-tenant и SaaS сейчас не посвящаем отдельную а�
 Приоритеты: SECURITY > RELIABILITY > SIMPLICITY > REUSE OF MATURE TOOLS >
 UNDERSTANDABILITY > AUTOMATION > FEATURES.
 
-1. Аудит и удаление лишнего synthetic Docker subsystem. Реальные captures и
-   offline review сохранить; host acceptance прежнего M3 не продолжать.
-2. Подключить готовый secret scanner небольшим adapter для выбранного repository.
-   Сначала pin/provenance, redaction и coverage, затем отчёт; не собственный detector.
-3. Коротко проверить osquery для замены network/accounts parsers. Не добавлять
-   второй daemon и не считать его systemd table эквивалентом всех unit-файлов.
-4. При возвращении ежедневной эксплуатации — один systemd user timer/oneshot,
-   согласованная установка и проверка kill switch; затем удалить дубли scheduling.
-5. По реальной потребности — один Trivy **или** Grype adapter; отдельный Lynis audit.
+Уточнение владельца после аудита, 2026-09-13, заменяет прежнюю обязательную
+последовательность Gitleaks → osquery → timer и перенос trial до расширения runtime.
+
+1. Аудит и удаление лишнего synthetic Docker subsystem выполнены. Реальные captures
+   и offline review сохранить; host acceptance прежнего M3 не продолжать.
+2. Провести оценку существующего M2a на 5–7 обычных рабочих днях после отдельного
+   разрешения запуска. [Команды и критерии](operations/M2A-WATCHDOG.md#m2a-daily-trial).
+3. Оценить полезные события, шум, понятность объяснений, время разбора и пробелы сбора.
+   К коду возвращаться только ради подтверждённой проблемы; без неё остановиться.
+
+Текущие collectors, SQLite, baseline/diff и scheduler сохраняются. Gitleaks integration
+и osquery pilot отложены; systemd timer не является обязательной миграцией. Наличие
+готового аналога само по себе не оправдывает замену: польза должна превышать стоимость
+и риск. Новых функций, scanner adapters или дополнительной системы метрик сейчас нет.
 
 Journal workflow, новый dashboard, Docker monitoring, scanners сверх выбранного
 scope, generic rules/agents/CTI остаются DEFER. M2a SQLite, reviewed baseline,
