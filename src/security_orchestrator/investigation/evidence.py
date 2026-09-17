@@ -321,13 +321,178 @@ def references(pack):
     return refs
 
 
+GENERIC_SUMMARY = "Обнаружен drift; причина и легитимность требуют ручной проверки."
+_PROTOCOLS = {"tcp": "TCP", "udp": "UDP"}
+_FAMILIES = {4: "IPv4", 6: "IPv6"}
+_BIND_CLASSES = {
+    "wildcard": "wildcard",
+    "loopback": "loopback",
+    "private": "частный адрес",
+    "other": "иная",
+}
+_ENDPOINT_COMPARE = (
+    "protocol",
+    "family",
+    "port",
+    "bind_class",
+    "context_complete",
+    "uid_is_root",
+    "owner_count",
+    "owners_truncated",
+)
+_INSUFFICIENT_CHANGE = "Контекст изменился; доступных сведений недостаточно для детализации."
+
+
+def _observation_pair(alert):
+    observations = alert.get("observations")
+    if not isinstance(observations, list) or not observations:
+        return None, None
+    if len(observations) == 1:
+        if alert.get("change") == "removed":
+            return observations[0], None
+        return None, observations[0]
+    return observations[0], observations[-1]
+
+
+def _projected_endpoint(observation):
+    if not isinstance(observation, dict):
+        return None
+    record = observation.get("untrusted_record")
+    if isinstance(record, dict) and record.get("kind") == "endpoint":
+        return record
+    return None
+
+
+def _endpoint_facts(record):
+    if not isinstance(record, dict):
+        return None
+    protocol = _PROTOCOLS.get(record.get("protocol"))
+    family = _FAMILIES.get(record.get("family"))
+    bind = _BIND_CLASSES.get(record.get("bind_class"))
+    port = record.get("port")
+    if protocol is None or family is None or bind is None:
+        return None
+    if type(port) is not int or not 1 <= port <= 65535:
+        return None
+    return f"{protocol}, {family}, порт {port}, категория bind {bind}"
+
+
+def _changed_clause(before, after):
+    if not isinstance(before, dict) or not isinstance(after, dict):
+        return _INSUFFICIENT_CHANGE
+    if before.get("kind") != "endpoint" or after.get("kind") != "endpoint":
+        return _INSUFFICIENT_CHANGE
+    owners_differ = before.get("owners") != after.get("owners")
+    field_diff = {key for key in _ENDPOINT_COMPARE if before.get(key) != after.get(key)}
+    # Truncation can hide the actual delta; do not invent a specific owner change.
+    if not owners_differ and field_diff <= {"owners_truncated"}:
+        return _INSUFFICIENT_CHANGE
+    context = owners_differ or bool(field_diff & {"uid_is_root", "owner_count", "owners_truncated"})
+    completeness = "context_complete" in field_diff
+    bind = "bind_class" in field_diff
+    if context and completeness:
+        return "Изменение касается доступного process context и его полноты."
+    if context:
+        return "Изменение касается доступного process context."
+    if completeness:
+        return "Изменение касается полноты process context."
+    if bind:
+        return "Изменение касается категории bind."
+    return _INSUFFICIENT_CHANGE
+
+
+def _coverage(pack):
+    value = pack.get("source_coverage") if isinstance(pack, dict) else None
+    return value if isinstance(value, dict) else {}
+
+
+def _limitations_clause(change, record, before_obs, after_obs, described, coverage):
+    parts = []
+    stale = coverage.get("stale") is True or (
+        isinstance(described, dict) and described.get("stale") is True
+    )
+    if change == "removed":
+        parts.append("это результат сохранённого наблюдения, а не установленное текущее состояние")
+        if stale:
+            parts.append("описанная привязка не является текущим наблюдением")
+    elif stale:
+        parts.append("сохранённое evidence не является текущим наблюдением")
+    if isinstance(record, dict) and record.get("context_complete") is False:
+        parts.append("полный process context недоступен, идентичность процесса не установлена")
+    partial = coverage.get("status") in {"partial", "unavailable"}
+    if isinstance(described, dict) and described.get("completeness") == "partial":
+        partial = True
+    if change == "removed" and isinstance(after_obs, dict):
+        if after_obs.get("completeness") == "partial":
+            partial = True
+    if isinstance(before_obs, dict) and before_obs.get("completeness") == "partial":
+        partial = True
+    if partial:
+        parts.append("неполный снимок не подтверждает отсутствие")
+    if not parts:
+        return None
+    text = "; ".join(parts)
+    return text[0].upper() + text[1:] + "."
+
+
+def _endpoint_summary(pack):
+    # Closed templates over the minimized pack only; never copy telemetry or aliases.
+    alert = pack.get("alert") if isinstance(pack, dict) else None
+    if not isinstance(alert, dict) or alert.get("detector_id") != "endpoint-drift":
+        return GENERIC_SUMMARY
+    change = alert.get("change")
+    if change not in {"added", "removed", "changed"}:
+        return GENERIC_SUMMARY
+    before_obs, after_obs = _observation_pair(alert)
+    before = _projected_endpoint(before_obs)
+    after = _projected_endpoint(after_obs)
+    record = before if change == "removed" else after or before
+    facts = _endpoint_facts(record)
+    if change == "added":
+        lead = (
+            f"Относительно принятого baseline наблюдается добавление сетевой привязки: {facts}."
+            if facts
+            else "Относительно принятого baseline наблюдается добавление сетевой привязки."
+        )
+    elif change == "removed":
+        lead = (
+            "Относительно принятого baseline в соответствующем сохранённом снимке отсутствует "
+            + (f"сетевая привязка: {facts}." if facts else "сетевая привязка.")
+        )
+    else:
+        lead = (
+            "Относительно принятого baseline изменился сохранённый контекст сетевой привязки"
+            + (f": {facts}." if facts else ".")
+        )
+    sentences = [lead]
+    if isinstance(record, dict) and record.get("bind_class") == "wildcard":
+        sentences.append(
+            "Привязка ко всем локальным адресам не доказывает доступность из Интернета."
+        )
+    if change == "changed":
+        sentences.append(_changed_clause(before, after))
+    described = before_obs if change == "removed" else after_obs or before_obs
+    limits = _limitations_clause(
+        change, record, before_obs, after_obs, described, _coverage(pack)
+    )
+    if limits:
+        sentences.append(limits)
+    elif len(sentences) < 3:
+        sentences.append("Причина и легитимность требуют ручной проверки.")
+    return " ".join(sentences)
+
+
 def fallback(pack, reason):
+    alert = pack["alert"]
+    summary = (
+        _endpoint_summary(pack) if alert.get("detector_id") == "endpoint-drift" else GENERIC_SUMMARY
+    )
     return {
         "schema_version": 1,
         "mode": "deterministic",
         "reason": reason,
-        "summary": "Обнаружен drift; причина и легитимность требуют ручной проверки.",
-        "detector": pack["alert"],
+        "summary": summary,
+        "detector": alert,
         "guidance": pack["runbook"],
         "source_coverage": pack["source_coverage"],
         "limitations": LIMITS,

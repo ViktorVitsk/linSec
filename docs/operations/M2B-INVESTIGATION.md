@@ -2,14 +2,21 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
-Дата: 2026-09-11. Код и synthetic acceptance реализованы; real-provider acceptance,
+Дата: 2026-09-11, уточнение endpoint-drift summary: 2026-09-17. Код и synthetic
+acceptance реализованы; real-provider acceptance,
 сравнение локальных моделей и оценка русского объяснения человеком остаются открытыми.
 M2a проходит отдельный real-host trial владельца. Не объявляем этот trial завершённым.
 
 ## Что добавлено и что означает результат
 
 `sec investigate ID` читает существующую SQLite v2 в read-only режиме. Без AI settings
-возвращает статическое русское объяснение с минимизированными evidence. Детекторы,
+возвращает статическое русское объяснение с минимизированными evidence. Для
+`endpoint-drift` summary называет тип изменения относительно принятого baseline,
+TCP/UDP, IPv4/IPv6, порт и категорию bind, если эти поля есть в pack; wildcard не
+выдаётся за доступность из Интернета, UDP не называется слушающим сервером, а
+неполный process context, partial и устаревшее evidence остаются ограничениями.
+Тексты берутся из фиксированных шаблонов, без raw telemetry и псевдонимов.
+Остальные типы alerts сохраняют общий fallback. Детекторы,
 collectors, monitor, baseline и config fingerprint M2a не меняются. Нет миграций,
 analysis writes в watchdog DB, новых services или сенсоров. Read transaction заканчивается
 до provider call. Отсутствующая/повреждённая база даёт ошибку, не новый пустой inventory.
