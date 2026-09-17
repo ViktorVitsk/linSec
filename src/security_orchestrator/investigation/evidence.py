@@ -448,20 +448,27 @@ def _endpoint_summary(pack):
     after = _projected_endpoint(after_obs)
     record = before if change == "removed" else after or before
     facts = _endpoint_facts(record)
+    # Observations are the original comparison. pack["baseline"] is current and
+    # does not prove which baseline, if any, existed when the alert was formed.
     if change == "added":
         lead = (
-            f"Относительно принятого baseline наблюдается добавление сетевой привязки: {facts}."
-            if facts
-            else "Относительно принятого baseline наблюдается добавление сетевой привязки."
+            "Сохранённый результат сравнения на момент формирования фиксирует "
+            + (
+                f"добавление сетевой привязки: {facts}."
+                if facts
+                else "добавление сетевой привязки."
+            )
         )
     elif change == "removed":
         lead = (
-            "Относительно принятого baseline в соответствующем сохранённом снимке отсутствует "
+            "Сохранённый результат сравнения на момент формирования фиксирует, "
+            "что в соответствующем сохранённом снимке отсутствует "
             + (f"сетевая привязка: {facts}." if facts else "сетевая привязка.")
         )
     else:
         lead = (
-            "Относительно принятого baseline изменился сохранённый контекст сетевой привязки"
+            "Сохранённый результат сравнения на момент формирования фиксирует, "
+            "что изменился сохранённый контекст сетевой привязки"
             + (f": {facts}." if facts else ".")
         )
     sentences = [lead]

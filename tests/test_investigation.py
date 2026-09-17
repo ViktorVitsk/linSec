@@ -547,6 +547,7 @@ FORBIDDEN_CLAIMS = (
     "хост атакован",
     "доступен из Интернета",
     "подтверждено отсутствие",
+    "принятого baseline",
 )
 
 
@@ -632,6 +633,48 @@ class EndpointFallbackTests(unittest.TestCase):
         self.assertNotIn("address-", text)
         self.assertNotIn("executable-", text)
         self.assertNotIn("user-", text)
+
+    def test_historical_added_alert_does_not_claim_accepted_or_current_baseline(self):
+        item = endpoint_item()
+        self.scan({"tcp4": {"obj": item}})
+        alert_id = self.alert("tcp4", "added")["id"]
+        pack = self.pack_for(alert_id)
+        self.assertIsNone(pack["baseline"])
+        before = fallback(pack, "llm_disabled")["summary"]
+        self.assert_safe_summary(before)
+        self.assertIn("добавление", before)
+        self.assertIn("TCP", before)
+        self.assertIn("IPv4", before)
+        self.assertIn("8080", before)
+        self.assertIn("loopback", before)
+        self.assertIn("момент формирования", before)
+        self.assertNotIn("принят", before)
+
+        preview = self.app.baseline_preview()
+        self.app.baseline_update(preview["approval_token"], "Synthetic baseline")
+        pack_accepted = self.pack_for(alert_id)
+        self.assertIsNotNone(pack_accepted["baseline"])
+        self.assertIsNotNone(pack_accepted["baseline"]["untrusted_record"])
+        accepted = fallback(pack_accepted, "llm_disabled")["summary"]
+        self.assert_safe_summary(accepted)
+        self.assertIn("добавление", accepted)
+        self.assertIn("момент формирования", accepted)
+        self.assertEqual("added", pack_accepted["alert"]["change"])
+        self.assertNotIn("изменился", accepted)
+
+        self.scan({"tcp4": {"obj": endpoint_item(exe="/synthetic/other")}})
+        preview = self.app.baseline_preview()
+        self.app.baseline_update(preview["approval_token"], "Synthetic baseline")
+        pack_later = self.pack_for(alert_id)
+        later = fallback(pack_later, "llm_disabled")["summary"]
+        self.assert_safe_summary(later)
+        self.assertIn("добавление", later)
+        self.assertIn("8080", later)
+        self.assertIn("момент формирования", later)
+        self.assertNotIn("изменился", later)
+        self.assertNotIn("/synthetic/", later)
+        self.assertEqual("added", pack_later["alert"]["change"])
+        self.assertIsNotNone(pack_later["baseline"]["untrusted_record"])
 
     def test_added_removed_changed_match_the_observation(self):
         self.baseline()
