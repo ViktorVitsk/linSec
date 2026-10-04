@@ -222,7 +222,15 @@ def parse_ss(raw: str, protocol: str, family: int, owner=owner_context) -> dict:
         if state not in ({"LISTEN"} if protocol == "tcp" else {"UNCONN", "ESTAB"}):
             raise SourceError("invalid_input")
         address, separator, port = local.rpartition(":")
-        address = address.strip("[]")
+        # ss can place the interface zone after the closing IPv6 bracket.
+        # Preserve both [fe80::1]%eth0 and the previously accepted [fe80::1%eth0].
+        if address.startswith("["):
+            bracketed = re.fullmatch(r"\[([^\[\]]+)\](%[^\[\]%]+)?", address)
+            if bracketed is None:
+                raise SourceError("invalid_input")
+            address = bracketed[1] + (bracketed[2] or "")
+        if address.count("%") > 1 or address.endswith("%"):
+            raise SourceError("invalid_input")
         if not separator or not port.isdecimal() or not 0 <= int(port) <= 65535:
             raise SourceError("invalid_input")
         if int(port) == 0:  # An unbound UDP socket is not a bound endpoint.

@@ -664,6 +664,33 @@ class LinuxBoundaryTests(unittest.TestCase):
         self.assertEqual(0, data["uid"])
         self.assertFalse(data["context_complete"])
 
+    def test_ss_ipv6_zone_inside_or_outside_brackets_has_same_identity(self):
+        for protocol, state in (("udp", "UNCONN"), ("tcp", "LISTEN")):
+            expected = None
+            for address in ("[fe80::1]%eth0", "[fe80::1%eth0]", "fe80::1%eth0"):
+                with self.subTest(protocol=protocol, address=address):
+                    raw = f"{state} 0 0 {address}:5353 *:* uid:1000 ino:123 sk:1"
+                    actual = parse_ss(raw, protocol, 6)
+                    self.assertEqual("fe80::1%eth0", next(iter(actual.values()))["bind"])
+                    if expected is None:
+                        expected = actual
+                    self.assertEqual(expected, actual)
+
+    def test_ss_ipv6_different_zones_remain_distinct(self):
+        raw = "\n".join(
+            f"UNCONN 0 0 [fe80::1]%{zone}:5353 *:* uid:1000 ino:123 sk:1"
+            for zone in ("eth0", "eth1")
+        )
+        self.assertEqual(2, len(parse_ss(raw, "udp", 6)))
+
+    def test_ss_ipv6_malformed_brackets_or_zones_are_rejected(self):
+        for address in (
+            "[fe80::1", "[[fe80::1]]", "[fe80::1]suffix", "[fe80::1]%",
+            "[fe80::1%eth0]%eth1", "[fe80::1]%eth0]", "fe80::1]",
+        ):
+            with self.subTest(address=address), self.assertRaises(SourceError):
+                parse_ss(f"UNCONN 0 0 {address}:5353 *:* ino:123 sk:1", "udp", 6)
+
     def test_ss_malformed_input_cannot_be_empty_success(self):
         for raw in (
             "PRIVATE_MARKER malformed",
