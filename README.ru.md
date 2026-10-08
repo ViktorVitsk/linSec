@@ -1,5 +1,7 @@
 # linSec — архив Linux security watchdog
 
+> Public history notice (2026-10-08): this is a separately sanitized publication copy. Private workstation, network and deployment observations were withheld throughout Git history; local paths/VM labels are publication placeholders. Original commit dates, author names, chronology and development work remain. Git email uses the owner-provided GitHub noreply address; commit hashes changed. Historical results are dated records, not new tests or current security attestations. See [publication review](docs/PUBLICATION_REVIEW.md) for evidence limitations.
+
 [English README](README.md)
 
 linSec замечает изменения на личной Linux workstation и позволяет разобраться

@@ -1,124 +1,53 @@
-# Archive and publication review — 2026-10-08
+# Sanitized publication review — 2026-10-08
 
-> Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
+**Security verdict: READY for owner review of this separate copy. Nothing has been published.** This report supersedes the earlier disclosure blocker for this sanitized branch only. The originals remain private and are not approved for transfer. License selection remains an owner's reuse decision.
 
-## Specialized publication check — 2026-10-08
+## History and attribution
 
-**Verdict: BLOCKED pending the owner's disclosure decision; no Gitleaks findings.**
-The earlier generic-scan limitation below is superseded by this check. Only this
-report is updated and committed locally. No code, history or private runtime data
-was changed; no project tests, collectors, providers or services ran. No publication
-or push was performed.
+| Check | Result |
+| --- | --- |
+| Publication branch | `refs/heads/main` only |
+| Source commits → preserved historical commits | 39 → 39 |
+| New publication documentation commit | +1; final total 40 |
+| Parents, order, author/committer names and timestamps/time zones | Preserved for every mapped commit |
+| Historical messages | All preserved |
+| Commits made empty by withholding private-only content | 4, retained in sequence |
+| Author and committer email | Owner-confirmed GitHub noreply identity on every commit |
+| Original object IDs | Rewritten; old IDs quoted in dated documents/messages refer to private source history |
 
-### Gitleaks result
+Git's official branch-only bundle/clone workflow and git-filter-repo v2.47.0 were used. No squash, fabricated author, backdated publication commit, test execution, system change or push was performed. Mapping/procedural records and unsanitized source bundles are private and outside this publication copy. Original ASCP WIP and all original refs were excluded.
 
-Official [Gitleaks 8.30.1](https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1),
-Linux x64 archive SHA-256
-`551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb`, verified against
-the official checksum file and release-asset digest. Used from a private temporary
-directory; no system installation, package or PATH changes.
+## Withheld data and evidence cost
 
-Scanned `refs/heads/main` at `ff05d7b2f5073c94c348c6b8b758e16714693160`:
-38 commits with `git --log-opts="--full-history --root -m <SHA>"`, committed directory
-snapshot with `dir`, and commit metadata/messages with `stdin`. All three scans:
-**exit 0, findings 0**. Built-in rules, no custom baseline/config/ignore file;
-inline `gitleaks:allow` comments disabled, `--redact=100`, private local reports.
-The previous synthetic invalid-config fixture was not a Gitleaks finding.
+Throughout reachable history, the copy removes or aliases personal email, local account/home paths, real host/sensor/organization and VM labels, private network/MAC/UUID identifiers, router model, exact workstation inventory/security posture, installed credentials/authorization/network settings and actionable private host findings. No replacement observation is presented as a real measurement. Public aliases such as `/workspace/ASCP`, `/workspace/linSec`, `/home/portfolio`, `/home/sandbox` and `publication-sandbox` are templates.
 
-A branch-only bundle/clone contained exactly the branch's **556 reachable objects**,
-with no additional refs/objects or local runtime data. Ignored contents, remote-only
-refs and unrelated local service refs are outside the publication scan. A negative
-scanner result is not a guarantee against all possible secret representations.
+All `src/`, tests, example configurations and dependency lock files are byte-identical throughout the mapped history. The only non-documentation substitution is a private home-path reference in `scripts/check_m2c_package.py`. Synthetic fixtures, including synthetic private-network addresses, remain: they are test inputs, not workstation disclosures.
 
-### Information that would become public
+The workstation audit, firewall plan and owner/recovery decision record retain methods, scope, section structure and explicit omission notices, but not exact observations, target policies or actionable private findings. Some host-specific verification evidence was intentionally withheld. The public history consequently cannot independently prove those private host changes or recovery conditions; unknowns and historical software test results are not converted into new PASS claims.
 
-[Publication redaction: private workstation observation/configuration omitted.]
+## Checks
 
+Official [Gitleaks 8.30.1](https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1), archive SHA-256 `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb`, verified against official release checksums. Built-in rules, `--redact=100`, inline allow comments disabled, no custom config/baseline/ignore list. Git scope: `--full-history --root -m HEAD`; current directory and commit metadata were scanned separately. Raw redacted reports remain private.
 
+History, directory snapshot and commit-metadata scans each returned exit 0, zero findings. The explicit synthetic invalid-credential fixture remains unchanged; it was not reported as a credential by Gitleaks.
 
-The pending decision is whether to publish this detailed historical workstation/
-network inventory and personal Git attribution. Until explicitly accepted, the
-existing history is **BLOCKED for public release**. If unacceptable, keep the original
-private and agree a separate sanitization/publication approach. A current-file edit
-or future noreply identity does not sanitize past commits. Nothing was redacted,
-deleted or rewritten during this review.
+Known private-token checks cover all reachable text blobs and commit metadata, with synthetic test data distinguished from actual host observations. The cleaned copies contain no known personal email or private deployment identifiers. Static Git checks verify commit topology/attribution, preserved tracked paths and file modes, key project files, syntax/JSON and current local documentation links. Git integrity/reachability checks and a final fresh branch-only clone exclude service refs, replacement/backup refs, old commits, unreachable objects, reflog retention of old history, alternates and private archives. No runtime or project acceptance tests were repeated.
 
-### License recommendation
+## Remaining public information and limits
 
-Recommend [MIT](https://choosealicense.com/licenses/mit/) for original code/docs the
-owner has rights to license: permissive inspection/reuse fits an archived engineering
-portfolio. The project declares no Python runtime dependencies; no vendored source
-or submodule tree was found in branch history. Python/SQLite, system tools, build/dev
-tools and any third-party portions retain their own licenses/notices. AI assistance
-is not evidence that all generated material is independently original; ownership
-and any copied portions must be confirmed before applying a blanket project license.
-[Apache-2.0](https://choosealicense.com/licenses/apache-2.0/) is an alternative if an
-explicit patent grant is desired, with more notice requirements. No license file
-was added. License selection is separate from the disclosure blocker above.
+Author names, the GitHub noreply identity, development dates/time zones and substantive messages remain public by design. So do software architecture, generic security defaults/resource limits, historical tool/provider/model names and source/artifact fingerprints. An observer can learn how these prototypes were built and identify documented limitations. These are engineering evidence, not a map or attestation of the owner's current installation. Secret scanning and a bounded metadata review cannot certify absence of every possible disclosure. Cleaning this copy cannot retract any earlier publication or external clone of the originals.
 
-## Previous preparation record (retained)
+## License recommendation
 
-**Disposition: documentation prepared; publication pending owner decisions.**
-This is a bounded local publication review. It does not restart linSec development,
-monitoring, AI acceptance or the operational trial. No push, visibility change,
-history rewrite, service launch, credential change or deletion was performed.
+Recommend [MIT](https://opensource.org/license/mit) for this archived engineering portfolio's original code/docs, provided the owner has rights to grant that license. Keep notices for copied third-party portions; AI assistance alone does not establish ownership. No vendored dependency/model tree or submodule was found in the selected history. Tool invocations and external dependencies retain their own licenses; a project license does not relicense them. [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) is an alternative when an explicit contributor patent grant is wanted. No LICENSE was added without the owner's selection.
 
-## Scope and method
+## Transfer boundary — instructions only, not executed
 
-Starting branch: `main`, `05ac126626880410a9336e35628ca723a1cd2a1b`, with a clean
-working tree, 95 tracked paths and 37 reachable commits. All locally available
-refs (including cached `origin` refs) were inventoried: 285 distinct blobs, all text
-and below 2 MiB, plus commit metadata. Remote contents and visibility were not
-queried; a cached remote ref does not establish present GitHub state.
+Use this cleaned copy and a new empty GitHub repository after separate owner approval. Verify the final reviewed HEAD against the external local review report before transfer. The explicit branch refspec sends its cleaned ancestor history and reachable trees/blobs; it does not select unrelated refs. [Git push reference](https://git-scm.com/docs/git-push).
 
-Read-only Git inventory/history commands and the existing `scripts/check_m0.py`
-were used. A temporary Python/regex pass searched tracked working-tree text and
-reachable blobs/commit text for private-key headers, common provider-token prefixes,
-JWT shapes, credential-bearing URLs and quoted credential assignments. Home paths,
-private IPv4 addresses, MAC-like strings and email metadata were also located.
-Matched credential values were not included in this report.
+```sh
+# Template only; replace APPROVED_EMPTY_REPOSITORY_URL after owner approval.
+git -c push.followTags=false -c push.recurseSubmodules=no push --no-follow-tags APPROVED_EMPTY_REPOSITORY_URL refs/heads/main:refs/heads/main
+```
 
-Gitleaks, TruffleHog and detect-secrets were unavailable on PATH; no scanner was
-installed or downloaded. This limited search is **not equivalent to a maintained
-secret scanner**. Ignored runtime files, reflogs/unreachable objects, remote-only
-history and GitHub account/settings were outside scope. No absence-of-secrets
-certification is claimed.
-
-## Findings and minimal next decisions
-
-| Finding | Evidence location / scope | Minimal safe response before publication |
-| --- | --- | --- |
-| No confirmed credential in inspected text | One quoted credential candidate in `tests/test_investigation.py`, present in three historical blob versions, is an explicit synthetic invalid-config fixture. | Keep the test. Run a maintained scanner with redacted output against the intended publication refs before pushing; do not blanket-allowlist tests. Revoke/rotate any real credential found in a later scan. |
-| Real workstation/network metadata in tracked history | `docs/audit/INITIAL_SECURITY_AUDIT.md` contains dated network, privilege, software and persistence inventory; `docs/architecture/INITIAL_THREAT_MODEL.md` includes network context. Host paths also appear in operational docs and package-inspection tooling. | Owner must decide whether these details can be public. Preserve originals. If disclosure is unacceptable, keep this history private and agree a separate publication/redaction strategy; changing only HEAD does not remove earlier copies. |
-| Synthetic examples need different treatment from host evidence | Private-address/path matches also occur in `tests/test_local_ui.py` and `tests/test_watchdog.py`. | These fixture matches are not themselves evidence of leaked workstation data. Do not remove useful negative tests to obtain an empty search result. |
-| Git identity is disclosed by history | One author/committer email identity, not a GitHub noreply address; value omitted here. | Confirm intended public attribution. No identity rewrite or global Git configuration change was performed. |
-| No tracked runtime/database/log/private-key paths found in inspected history | Git path inventory and ignore behavior; private runtime data remains local. | Publish only explicitly reviewed refs/files. Do not upload a whole working-directory archive containing ignored `runtime/` data. |
-| Distribution license not selected | No repository LICENSE file or selected project license in metadata. | Owner to choose intended reuse terms and review applicable notices; no license was added on the owner's behalf. |
-
-These are privacy and publication concerns, not a new host-security verdict.
-Historical firewall or acceptance reports do not establish the current machine's
-state. Reusing this code on another host requires its own scoped verification.
-
-## Preparation and checks
-
-- English README maps functionality, architecture, significant decisions and dated
-  acceptance to source/tests; Russian summary remains available. Agent involvement
-  and attribution limits are explicit.
-- Archive notices in AGENTS and ROADMAP supersede older instructions to resume trial
-  or implementation. The source, tests, detailed Russian records and Git history
-  are preserved; no unrelated working-tree changes existed at the start.
-- Safe CLI demo checked against a temporary `git archive HEAD` export with the
-  already available Python 3.13.15 interpreter and `PYTHONPATH=src`: exit 0,
-  `synthetic_only`, alerts 5 → 5 → 7 for initial/repeated/changed evidence,
-  `host_collection=false`, `system_changes=false`. The database was separate
-  temporary synthetic state. No host collectors, provider, Docker or HTTP server ran.
-- Existing repository hygiene and `git diff --check`: PASS. Checked 184 local
-  Markdown links (including fragment targets), with no missing destinations/anchors. Full synthetic suites,
-  remote CI, host acceptance and benchmarks were not repeated.
-- Byte comparisons against the clean starting HEAD confirm that
-  source/tests/configuration and existing evidence documents did not change. Only explicit documentation paths
-  enter the local portfolio commit.
-
-The README's test counts and acceptance results come from dated records and are
-not presented as new tests. Historical upstream links/product comparisons were
-not re-researched; new README links point to repository evidence.
+Do not use `--all`, `--mirror`, `--tags`, wildcard refspecs, or transfer original repositories/bundles/archives. Only the cleaned main branch was included. These are independent Git repositories with no remotes and no links to original object stores.
