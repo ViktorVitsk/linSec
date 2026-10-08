@@ -2,6 +2,14 @@
 
 > Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
 
+## Архив — решение владельца 2026-10-08
+
+Разработка остановлена; проект оформлен как инженерное портфолио.
+[README](../README.md) описывает реализованное и ограничения,
+[отчёт публикации](PUBLICATION_REVIEW.md) — оставшиеся privacy/release решения.
+Полный семидневный trial не завершён. Порядок работ ниже сохранён как история,
+не является разрешением возобновить trial, host monitoring или реализацию.
+
 Дата обновления: 2026-09-13. Статус: **пересмотрен по запросу владельца — reuse first**.
 Прежняя последовательность M2/M3 ниже сохраняется как история, а не автоматический план.
 Цель — личный рабочий инструмент и обучение через реальные события. Компаниям,

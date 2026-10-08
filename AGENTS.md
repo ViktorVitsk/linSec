@@ -1,5 +1,14 @@
 # Security Orchestrator — working instructions
 
+## Archive override — 2026-10-08
+
+The owner has stopped development and requested portfolio preparation only.
+README.md is the current entry point; docs/PUBLICATION_REVIEW.md records remaining
+publication decisions. Historical mission/trial/roadmap instructions below do not
+authorize resuming development or monitoring. Preserve source, tests, history,
+unfinished work and private runtime artifacts. Do not push, publish, change
+visibility or rewrite history without a separate request.
+
 ## Mission and scope
 
 - Build a useful personal Linux security monitor that teaches through real evidence.
