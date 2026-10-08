@@ -1,5 +1,63 @@
 # Archive and publication review — 2026-10-08
 
+> Publication redaction: workstation-specific evidence/settings were withheld. Methods, dated outcomes and limitations remain historical; omitted values are not replacement measurements.
+
+## Specialized publication check — 2026-10-08
+
+**Verdict: BLOCKED pending the owner's disclosure decision; no Gitleaks findings.**
+The earlier generic-scan limitation below is superseded by this check. Only this
+report is updated and committed locally. No code, history or private runtime data
+was changed; no project tests, collectors, providers or services ran. No publication
+or push was performed.
+
+### Gitleaks result
+
+Official [Gitleaks 8.30.1](https://github.com/gitleaks/gitleaks/releases/tag/v8.30.1),
+Linux x64 archive SHA-256
+`551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb`, verified against
+the official checksum file and release-asset digest. Used from a private temporary
+directory; no system installation, package or PATH changes.
+
+Scanned `refs/heads/main` at `ff05d7b2f5073c94c348c6b8b758e16714693160`:
+38 commits with `git --log-opts="--full-history --root -m <SHA>"`, committed directory
+snapshot with `dir`, and commit metadata/messages with `stdin`. All three scans:
+**exit 0, findings 0**. Built-in rules, no custom baseline/config/ignore file;
+inline `gitleaks:allow` comments disabled, `--redact=100`, private local reports.
+The previous synthetic invalid-config fixture was not a Gitleaks finding.
+
+A branch-only bundle/clone contained exactly the branch's **556 reachable objects**,
+with no additional refs/objects or local runtime data. Ignored contents, remote-only
+refs and unrelated local service refs are outside the publication scan. A negative
+scanner result is not a guarantee against all possible secret representations.
+
+### Information that would become public
+
+[Publication redaction: private workstation observation/configuration omitted.]
+
+
+
+The pending decision is whether to publish this detailed historical workstation/
+network inventory and personal Git attribution. Until explicitly accepted, the
+existing history is **BLOCKED for public release**. If unacceptable, keep the original
+private and agree a separate sanitization/publication approach. A current-file edit
+or future noreply identity does not sanitize past commits. Nothing was redacted,
+deleted or rewritten during this review.
+
+### License recommendation
+
+Recommend [MIT](https://choosealicense.com/licenses/mit/) for original code/docs the
+owner has rights to license: permissive inspection/reuse fits an archived engineering
+portfolio. The project declares no Python runtime dependencies; no vendored source
+or submodule tree was found in branch history. Python/SQLite, system tools, build/dev
+tools and any third-party portions retain their own licenses/notices. AI assistance
+is not evidence that all generated material is independently original; ownership
+and any copied portions must be confirmed before applying a blanket project license.
+[Apache-2.0](https://choosealicense.com/licenses/apache-2.0/) is an alternative if an
+explicit patent grant is desired, with more notice requirements. No license file
+was added. License selection is separate from the disclosure blocker above.
+
+## Previous preparation record (retained)
+
 **Disposition: documentation prepared; publication pending owner decisions.**
 This is a bounded local publication review. It does not restart linSec development,
 monitoring, AI acceptance or the operational trial. No push, visibility change,
